@@ -231,7 +231,31 @@ jobs:
       - name: Build release binary
         run: cargo build --workspace --release --verbose
 
-  # Job 11: Build release binary on Windows
+  # Job 11: Build release binary on macOS aarch64 (Apple Silicon)
+  release-macos-aarch64:
+    name: Release Build (macOS aarch64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Add aarch64 target for Apple Silicon
+      - name: Add aarch64 target
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-aarch64-release
+
+      # Build release for Apple Silicon
+      - name: Build release binary (aarch64)
+        run: cargo build --workspace --release --target aarch64-apple-darwin --verbose
+
+  # Job 12: Build release binary on Windows
   release-windows:
     name: Release Build (Windows x86_64)
     runs-on: windows-latest
@@ -248,7 +272,7 @@ jobs:
       - name: Build release binary
         run: cargo build --workspace --release --verbose
 
-  # Job 12: Security audit of dependencies
+  # Job 13: Security audit of dependencies
   security:
     name: Security Audit
     runs-on: ubuntu-latest
