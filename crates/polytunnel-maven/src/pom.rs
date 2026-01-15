@@ -362,6 +362,13 @@ impl Pom {
         let props = &self.properties;
 
         for dep in &mut self.dependencies {
+            // Resolve groupId and artifactId if they contain variables
+            if dep.group_id.contains("${") {
+                dep.group_id = resolve_value(&dep.group_id, props);
+            }
+            if dep.artifact_id.contains("${") {
+                dep.artifact_id = resolve_value(&dep.artifact_id, props);
+            }
             if let Some(v) = &dep.version {
                 // Only try to resolve if it still looks like a variable
                 if v.contains("${") {
@@ -371,6 +378,13 @@ impl Pom {
         }
 
         for dep in &mut self.dependency_management {
+            // Resolve groupId and artifactId if they contain variables
+            if dep.group_id.contains("${") {
+                dep.group_id = resolve_value(&dep.group_id, props);
+            }
+            if dep.artifact_id.contains("${") {
+                dep.artifact_id = resolve_value(&dep.artifact_id, props);
+            }
             if let Some(v) = &dep.version {
                 if v.contains("${") {
                     dep.version = Some(resolve_value(v, props));
