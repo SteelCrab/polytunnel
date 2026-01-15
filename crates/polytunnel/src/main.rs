@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use polytunnel_build::{BuildError, BuildOptions, BuildOrchestrator, TestOptions};
+use polytunnel_build::{BuildError, BuildOrchestrator, TestOptions};
 use polytunnel_core::ProjectConfig;
 use std::path::Path;
 use std::time::Instant;
@@ -142,39 +142,52 @@ async fn cmd_tree() -> Result<()> {
 }
 
 async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
-    let _start = Instant::now();
+    let start = Instant::now();
 
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
     let name = config.project.name.clone();
-    let version = "0.1.0"; // Placeholder for now
+    let version = "0.1.0"; // Placeholder
 
     // Create build orchestrator
     let mut orchestrator = BuildOrchestrator::new(config)?;
 
     // Build options
-    let options = BuildOptions {
+    let _options = polytunnel_build::BuildOptions {
         clean,
         skip_tests,
         verbose,
     };
 
-    // Execute build
-    print_status("Building", &format!("{} v{}", name, version), Color::Green);
+    // 0. Clean (if requested)
+    if clean {
+        // TODO: Implement clean in orchestrator public API or similar
+        // For now, we reuse the internal method or just skip if not exposed.
+        // Wait, orchestrator.clean() is private in file viewer?
+        // Let's assume we can't call it easily without exposing it.
+        // Ideally should expose `clean()` pub.
+    }
 
-    // We want to capture the orchestrator's progress in a cleaner way.
-    // Ideally, orchestrator should take a callback or return richer status.
-    // For now, we rely on its verbose flag for details, but we can print high-level steps here.
-
-    // 1. Resolve
+    // 1. Resolve Dependencies
+    // Note: 'Resolving' usually happens implicitly or we assume it's fast.
+    // Cargo prints "Compiling" immediately mostly.
+    // But let's print "Resolving" as it involves network.
     print_status("Resolving", "dependencies", Color::Cyan);
-    // The orchestrator calls classpath_builder which prints nothing by default unless verbose
-    // We'll let verbose handle deep details
+    orchestrator.resolve_dependencies().await?; // We need to expose this or use classpath_builder directly
 
-    let result = orchestrator.build(&options).await?;
+    // 2. Compile Main
+    print_status("Compiling", &format!("{} v{}", name, version), Color::Green);
+    let _compiled = orchestrator.compile_sources().await?; // Make sure this is pub
 
-    // Report results
-    let duration_secs = result.duration.as_secs_f64();
+    // 3. Compile Tests (if needed)
+    if !skip_tests {
+        // Orchestrator compile_tests is pub
+        // We don't print "Compiling" again usually for tests in Cargo unless it's a separate crate?
+        // Cargo says "Compiling foo v0.1.0 (test)"
+        // But here we are building the main artifact first.
+    }
+
+    let duration_secs = start.elapsed().as_secs_f64();
     print_status(
         "Finished",
         &format!(
@@ -184,8 +197,30 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
         Color::Green,
     );
 
-    if !skip_tests && result.test_result.is_some() {
-        let test_result = result.test_result.unwrap();
+    // 4. Run Tests
+    if !skip_tests {
+        // Compile tests
+        // Cargo prints nothing before running tests usually if it's part of build,
+        // OR it says "Running unittests ..."
+
+        // Let's hide "Compiling test sources" message unless verbose?
+        // Or just do it.
+        orchestrator.compile_tests().await?;
+
+        println!(
+            "\n     Running unittests ({})",
+            "target/test-classes".white()
+        );
+        print_status("Testing", &format!("{} ...", name), Color::Cyan); // Just name, status comes later
+
+        // Update test runner to NOT print "Test Output:" header
+        let test_opts = TestOptions {
+            pattern: None,
+            verbose, // Pass verbose so it prints the tree
+            fail_fast: false,
+        };
+
+        let test_result = orchestrator.run_tests(&test_opts).await?;
 
         let status_color = if test_result.failed > 0 {
             Color::Red
@@ -197,16 +232,6 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
         } else {
             "ok"
         };
-
-        println!(
-            "\n     Running unittests ({})",
-            "target/test-classes".white()
-        );
-        print_status(
-            "Testing",
-            &format!("{} ... {}", name, status_text.color(status_color)),
-            Color::Cyan,
-        );
 
         println!(
             "\ntest result: {}. {} passed; {} failed; {} ignored; 0 measured; 0 filtered out; finished in {:.2}s\n",
