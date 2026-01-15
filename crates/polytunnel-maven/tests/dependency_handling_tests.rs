@@ -126,7 +126,7 @@ fn test_coordinate_classifier_types() {
 
 #[test]
 fn test_dependency_scope_all_variants() {
-    let scopes = vec![
+    let scopes = [
         polytunnel_core::DependencyScope::Compile,
         polytunnel_core::DependencyScope::Test,
         polytunnel_core::DependencyScope::Runtime,
@@ -148,11 +148,8 @@ fn test_coordinate_jar_path_construction() {
 
     let group_path = coord.group_id.replace(".", "/");
     let jar_path = format!(
-        "{}/{}/{}/{}",
-        group_path,
-        coord.artifact_id,
-        coord.version,
-        format!("{}-{}.jar", coord.artifact_id, coord.version)
+        "{}/{}/{}/{}-{}.jar",
+        group_path, coord.artifact_id, coord.version, coord.artifact_id, coord.version
     );
 
     assert!(jar_path.contains("org/springframework"));
@@ -389,13 +386,12 @@ fn test_coordinate_bom_import() {
 
 #[test]
 fn test_dependency_exclusion_pattern() {
-    let excluded_group = "commons-logging";
-    assert!(!excluded_group.is_empty());
+    let _excluded_group = "commons-logging";
 }
 
 #[test]
 fn test_coordinate_version_ordering() {
-    let versions = vec!["1.0.0", "1.1.0", "2.0.0"];
+    let versions = ["1.0.0", "1.1.0", "2.0.0"];
     let latest = versions.iter().max().unwrap();
 
     assert_eq!(*latest, "2.0.0");
@@ -413,7 +409,7 @@ fn test_coordinate_compatible_version_range() {
 
 #[test]
 fn test_dependency_convergence_highest_version() {
-    let versions = vec!["1.0.0", "1.5.0", "2.0.0"];
+    let versions = ["1.0.0", "1.5.0", "2.0.0"];
     let selected = versions.iter().max().unwrap();
 
     assert_eq!(*selected, "2.0.0");
@@ -421,7 +417,7 @@ fn test_dependency_convergence_highest_version() {
 
 #[test]
 fn test_coordinate_repository_order() {
-    let repos = vec!["central", "custom", "snapshots"];
+    let repos = ["central", "custom", "snapshots"];
     assert_eq!(repos[0], "central");
 }
 

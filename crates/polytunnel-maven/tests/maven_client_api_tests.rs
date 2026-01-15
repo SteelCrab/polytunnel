@@ -301,7 +301,7 @@ fn test_maven_repository_structure() {
 
 #[test]
 fn test_multiple_maven_repositories() {
-    let repos = vec![
+    let repos = [
         Repository {
             name: "central".to_string(),
             url: "https://repo1.maven.org/maven2/".to_string(),
