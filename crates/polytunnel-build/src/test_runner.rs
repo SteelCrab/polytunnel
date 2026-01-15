@@ -175,48 +175,48 @@ impl TestRunner {
     ) -> Result<TestResult> {
         let test_classes = self.find_test_classes()?;
         if test_classes.is_empty() {
-             return Ok(TestResult {
-                 total: 0,
-                 passed: 0,
-                 failed: 0,
-                 skipped: 0,
-                 failures: vec![],
-             });
+            return Ok(TestResult {
+                total: 0,
+                passed: 0,
+                failed: 0,
+                skipped: 0,
+                failures: vec![],
+            });
         }
 
         match self.framework {
             TestFramework::JUnit5 => self.run_junit5(&test_classes, verbose).await,
             // Fallback for others (pending implementation)
             _ => Ok(TestResult {
-                 total: 0,
-                 passed: 0,
-                 failed: 0,
-                 skipped: 0,
-                 failures: vec![],
-             }), 
+                total: 0,
+                passed: 0,
+                failed: 0,
+                skipped: 0,
+                failures: vec![],
+            }),
         }
     }
 
     async fn run_junit5(&self, test_classes: &[String], verbose: bool) -> Result<TestResult> {
         // Construct classpath string
         let classpath = self.format_classpath();
-        
+
         let mut args = vec![
             "-jar".to_string(),
-            self.find_junit_console_launcher()?, 
+            self.find_junit_console_launcher()?,
             "-cp".to_string(),
             classpath,
         ];
-        
+
         // Add test classes
         for class in test_classes {
             args.push("-c".to_string());
             args.push(class.clone());
         }
 
-// Output is captured and can be printed by caller if needed, 
+        // Output is captured and can be printed by caller if needed,
         // or just rely on the test process stdout for tree structure visualization.
-        
+
         let output = std::process::Command::new("java")
             .args(&args)
             .output()
@@ -226,38 +226,44 @@ impl TestRunner {
         if verbose {
             // Check if output has content before printing to avoid empty lines
             if !output.stdout.is_empty() {
-                 println!("{}", String::from_utf8_lossy(&output.stdout).trim_end());
+                println!("{}", String::from_utf8_lossy(&output.stdout).trim_end());
             }
             if !output.stderr.is_empty() {
                 // Stdout usually contains the tree, stderr has warnings/errors
                 println!("{}", String::from_utf8_lossy(&output.stderr).trim_end());
             }
         }
-        
+
         // Parse output
         let stdout = String::from_utf8_lossy(&output.stdout);
-        
-        let passed = if let Some(cap) = stdout.lines()
+
+        let passed = if let Some(cap) = stdout
+            .lines()
             .find(|l| l.contains("tests successful"))
-            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok()))
+        {
             cap
         } else {
             0
         };
 
-        let failed = if let Some(cap) = stdout.lines()
+        let failed = if let Some(cap) = stdout
+            .lines()
             .find(|l| l.contains("tests failed"))
-            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok()))
+        {
             cap
         } else {
             0
         };
-        
+
         // Total is sum of passed + failed + aborted/skipped if we parse them
         // For now, let's trust the "tests found" line or just sum passed + failed
-        let total = if let Some(cap) = stdout.lines()
+        let total = if let Some(cap) = stdout
+            .lines()
             .find(|l| l.contains("tests found"))
-            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok()))
+        {
             cap
         } else {
             passed + failed
@@ -279,8 +285,8 @@ impl TestRunner {
             .iter()
             .find(|p| p.to_string_lossy().contains("junit-platform-console-standalone"))
             .map(|p| p.to_string_lossy().to_string())
-            .ok_or_else(|| crate::error::BuildError::TestExecutionFailed { 
-                message: "JUnit Platform Console Standalone JAR not found in classpath. Please add 'org.junit.platform:junit-platform-console-standalone' dependency.".to_string() 
+            .ok_or_else(|| crate::error::BuildError::TestExecutionFailed {
+                message: "JUnit Platform Console Standalone JAR not found in classpath. Please add 'org.junit.platform:junit-platform-console-standalone' dependency.".to_string()
             })
     }
 
