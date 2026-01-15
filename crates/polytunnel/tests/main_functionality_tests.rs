@@ -16,6 +16,7 @@ fn test_command_enum_variants() {
 
 #[test]
 fn test_build_options_structure() {
+    #[allow(dead_code)]
     struct BuildOptions {
         clean: bool,
         skip_tests: bool,
@@ -35,6 +36,7 @@ fn test_build_options_structure() {
 
 #[test]
 fn test_test_options_structure() {
+    #[allow(dead_code)]
     struct TestOptions {
         pattern: Option<String>,
         verbose: bool,
@@ -54,6 +56,7 @@ fn test_test_options_structure() {
 
 #[test]
 fn test_init_options_structure() {
+    #[allow(dead_code)]
     struct InitOptions {
         name: String,
         java_version: String,
@@ -131,7 +134,7 @@ fn test_version_string_format() {
 
 #[test]
 fn test_command_line_argument_parsing() {
-    let args = vec!["pt", "build", "--verbose"];
+    let args = ["pt", "build", "--verbose"];
     assert_eq!(args.len(), 3);
     assert_eq!(args[0], "pt");
     assert_eq!(args[1], "build");
@@ -168,20 +171,19 @@ fn test_config_file_loading() {
 #[test]
 fn test_project_initialization() {
     let project_name = "test-project";
-    assert!(!project_name.is_empty());
-    assert!(project_name.len() > 0);
+    assert_eq!(project_name, "test-project");
 }
 
 #[test]
 fn test_build_execution_order() {
-    let steps = vec!["resolve", "compile", "test"];
+    let steps = ["resolve", "compile", "test"];
     assert_eq!(steps.len(), 3);
     assert_eq!(steps[0], "resolve");
 }
 
 #[test]
 fn test_test_execution_flow() {
-    let steps = vec!["compile", "run_tests", "report"];
+    let steps = ["compile", "run_tests", "report"];
     assert_eq!(steps.len(), 3);
 }
 
@@ -225,7 +227,7 @@ fn test_java_version_requirement() {
 
 #[test]
 fn test_classpath_construction() {
-    let jars = vec!["lib1.jar", "lib2.jar"];
+    let jars = ["lib1.jar", "lib2.jar"];
     let separator = ":";
     let classpath = jars.join(separator);
     assert!(classpath.contains("lib1.jar"));

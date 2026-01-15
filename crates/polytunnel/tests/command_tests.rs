@@ -83,43 +83,43 @@ fn test_directory_creation_test_classes() {
 #[test]
 fn test_error_message_compilation() {
     let msg = "Compilation failed";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "Compilation failed");
 }
 
 #[test]
 fn test_error_message_test_failure() {
     let msg = "Test execution failed";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "Test execution failed");
 }
 
 #[test]
 fn test_error_message_missing_javac() {
     let msg = "Java compiler not found";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "Java compiler not found");
 }
 
 #[test]
 fn test_error_message_config_not_found() {
     let msg = "Configuration file not found";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "Configuration file not found");
 }
 
 #[test]
 fn test_success_message_build() {
     let msg = "Build completed successfully";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "Build completed successfully");
 }
 
 #[test]
 fn test_success_message_test() {
     let msg = "All tests passed";
-    assert!(!msg.is_empty());
+    assert_eq!(msg, "All tests passed");
 }
 
 #[test]
 fn test_project_name_from_args() {
     let name = "my-java-app";
-    assert!(!name.is_empty());
+    assert_eq!(name, "my-java-app");
 }
 
 #[test]

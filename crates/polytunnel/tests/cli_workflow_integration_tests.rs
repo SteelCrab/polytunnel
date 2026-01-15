@@ -5,7 +5,7 @@
 #[test]
 fn test_workflow_init_then_build() {
     let project = "test-project";
-    assert!(!project.is_empty());
+    assert_eq!(project, "test-project");
 }
 
 #[test]
@@ -49,13 +49,13 @@ fn test_cli_command_help_output() {
 #[test]
 fn test_cli_version_output() {
     let version = "0.1.0";
-    assert!(!version.is_empty());
+    assert_eq!(version, "0.1.0");
 }
 
 #[test]
 fn test_cli_init_creates_config() {
     let config_file = "polytunnel.toml";
-    assert!(!config_file.is_empty());
+    assert_eq!(config_file, "polytunnel.toml");
 }
 
 #[test]
@@ -309,13 +309,13 @@ fn test_cli_output_format_xml() {
 #[test]
 fn test_cli_help_command_structure() {
     let cmd = "help";
-    assert!(!cmd.is_empty());
+    assert_eq!(cmd, "help");
 }
 
 #[test]
 fn test_cli_version_command_structure() {
     let cmd = "version";
-    assert!(!cmd.is_empty());
+    assert_eq!(cmd, "version");
 }
 
 #[test]
@@ -323,8 +323,8 @@ fn test_cli_init_command_arguments() {
     let name = "my-app";
     let version = "0.1.0";
 
-    assert!(!name.is_empty());
-    assert!(!version.is_empty());
+    assert_eq!(name, "my-app");
+    assert_eq!(version, "0.1.0");
 }
 
 #[test]
@@ -352,7 +352,7 @@ fn test_cli_config_option_handling() {
 #[test]
 fn test_cli_output_option_handling() {
     let output_path = "build";
-    assert!(!output_path.is_empty());
+    assert_eq!(output_path, "build");
 }
 
 #[test]
@@ -375,8 +375,7 @@ fn test_cli_timeout_option_handling() {
 
 #[test]
 fn test_cli_environment_variable_support() {
-    let env_var = "JAVA_HOME";
-    assert!(!env_var.is_empty());
+    let _env_var = "JAVA_HOME";
 }
 
 #[test]
@@ -390,14 +389,10 @@ fn test_cli_config_precedence_cli_over_file() {
 
 #[test]
 fn test_cli_config_precedence_env_over_default() {
-    let env_value = Some("env");
-    let default_value = "default";
+    let env_value = "env";
+    let _default_value = "default";
 
-    if env_value.is_some() {
-        assert_eq!(env_value.unwrap(), "env");
-    } else {
-        assert_eq!(default_value, "default");
-    }
+    assert_eq!(env_value, "env");
 }
 
 #[test]
@@ -438,8 +433,8 @@ fn test_cli_compile_scope_included_everywhere() {
 
 #[test]
 fn test_cli_classpath_separator_handling() {
-    let sep = ":";
-    assert_eq!(sep, ":");
+    let sep = if cfg!(windows) { ";" } else { ":" };
+    assert!(!sep.is_empty());
 }
 
 #[test]
@@ -469,7 +464,7 @@ fn test_cli_package_directory_conversion() {
 
 #[test]
 fn test_cli_classpath_construction() {
-    let jars = vec!["lib1.jar", "lib2.jar"];
+    let jars = ["lib1.jar", "lib2.jar"];
     let classpath = jars.join(":");
     assert!(classpath.contains("lib1.jar"));
 }

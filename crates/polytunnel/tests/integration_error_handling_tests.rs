@@ -191,7 +191,9 @@ fn test_result_type_err_value() {
 #[test]
 fn test_result_unwrap_ok() {
     let result: Result<i32, String> = Ok(42);
-    assert_eq!(result.unwrap(), 42);
+    if let Ok(val) = result {
+        assert_eq!(val, 42);
+    }
 }
 
 #[test]
@@ -350,7 +352,7 @@ fn test_error_handling_type_mismatch() {
 #[test]
 fn test_error_recovery_fallback_value() {
     let value = "fallback";
-    assert!(!value.is_empty());
+    assert_eq!(value, "fallback");
 }
 
 #[test]
@@ -370,7 +372,7 @@ fn test_error_suppression_logging() {
 
 #[test]
 fn test_error_aggregation_multiple_errors() {
-    let errors = vec![
+    let errors = [
         "Error 1: File not found",
         "Error 2: Invalid format",
         "Error 3: Network timeout",
@@ -380,7 +382,7 @@ fn test_error_aggregation_multiple_errors() {
 
 #[test]
 fn test_error_order_preservation() {
-    let error_sequence = vec!["First error", "Second error", "Third error"];
+    let error_sequence = ["First error", "Second error", "Third error"];
     assert_eq!(error_sequence[0], "First error");
     assert_eq!(error_sequence[2], "Third error");
 }

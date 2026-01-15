@@ -5,8 +5,7 @@
 #[test]
 fn test_init_command_project_name() {
     let project_name = "my-java-app";
-    assert!(!project_name.is_empty());
-    assert!(project_name.len() > 0);
+    assert_eq!(project_name, "my-java-app");
 }
 
 #[test]
@@ -64,8 +63,7 @@ fn test_test_options_defaults() {
 #[test]
 fn test_project_initialization_name() {
     let name = "test-project";
-    assert!(!name.is_empty());
-    assert!(name.len() > 0);
+    assert_eq!(name, "test-project");
 }
 
 #[test]
@@ -102,7 +100,7 @@ fn test_test_output_directory() {
 
 #[test]
 fn test_supported_commands() {
-    let commands = vec!["init", "build", "test"];
+    let commands = ["init", "build", "test"];
     assert!(commands.contains(&"init"));
     assert!(commands.contains(&"build"));
     assert!(commands.contains(&"test"));
@@ -124,7 +122,7 @@ fn test_command_test_all_options() {
     let verbose = true;
     let fail_fast = false;
 
-    assert!(!pattern.is_empty());
+    assert_eq!(pattern, "TestSuite");
     assert!(verbose);
     assert!(!fail_fast);
 }
@@ -158,25 +156,25 @@ fn test_default_test_directory() {
 #[test]
 fn test_java_compiler_not_found_handling() {
     let error_message = "Java compiler not found";
-    assert!(!error_message.is_empty());
+    assert_eq!(error_message, "Java compiler not found");
 }
 
 #[test]
 fn test_compilation_failed_handling() {
     let error_message = "Compilation failed";
-    assert!(!error_message.is_empty());
+    assert_eq!(error_message, "Compilation failed");
 }
 
 #[test]
 fn test_test_execution_failed_handling() {
     let error_message = "Test execution failed";
-    assert!(!error_message.is_empty());
+    assert_eq!(error_message, "Test execution failed");
 }
 
 #[test]
 fn test_dependency_not_found_handling() {
     let error_message = "Dependency not found";
-    assert!(!error_message.is_empty());
+    assert_eq!(error_message, "Dependency not found");
 }
 
 #[test]
@@ -216,7 +214,7 @@ fn test_verbose_logging_enabled() {
 #[test]
 fn test_version_flag_output() {
     let version = "0.1.0";
-    assert!(!version.is_empty());
+    assert_eq!(version, "0.1.0");
 }
 
 #[test]
