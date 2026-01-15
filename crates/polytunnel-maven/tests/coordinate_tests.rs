@@ -1,4 +1,6 @@
 //! Tests for coordinate module
+//!
+//! Coverage: Ensures correct parsing, validation, and string representation of Maven Group:Artifact:Version:Packaging coordinates.
 
 use polytunnel_maven::Coordinate;
 

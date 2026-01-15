@@ -1,4 +1,6 @@
 //! Tests for POM parser
+//!
+//! Coverage: Validates the accuracy of Maven POM XML parsing, dependency extraction, and metadata handling.
 
 use polytunnel_maven::parse_pom;
 
