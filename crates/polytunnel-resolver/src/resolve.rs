@@ -118,7 +118,10 @@ impl Resolver {
             let transitive: Vec<Coordinate> = pom
                 .dependencies
                 .iter()
-                .filter(|d| d.scope == polytunnel_maven::DependencyScope::Compile)
+                .filter(|d| {
+                    // Include Compile and Provided scope (Provided scope is needed for Kotlin stdlib, etc.)
+                    matches!(d.scope, polytunnel_maven::DependencyScope::Compile | polytunnel_maven::DependencyScope::Provided)
+                })
                 .filter(|d| !d.optional)
                 .filter_map(|d| {
                     d.version
