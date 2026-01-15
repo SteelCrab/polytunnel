@@ -391,10 +391,15 @@ fn test_dependency_exclusion_pattern() {
 
 #[test]
 fn test_coordinate_version_ordering() {
+    use semver::Version;
     let versions = ["1.0.0", "1.1.0", "2.0.0"];
-    let latest = versions.iter().max().unwrap();
+    let latest = versions
+        .iter()
+        .map(|v| Version::parse(v).unwrap())
+        .max()
+        .unwrap();
 
-    assert_eq!(*latest, "2.0.0");
+    assert_eq!(latest.to_string(), "2.0.0");
 }
 
 #[test]
@@ -409,10 +414,15 @@ fn test_coordinate_compatible_version_range() {
 
 #[test]
 fn test_dependency_convergence_highest_version() {
+    use semver::Version;
     let versions = ["1.0.0", "1.5.0", "2.0.0"];
-    let selected = versions.iter().max().unwrap();
+    let selected = versions
+        .iter()
+        .map(|v| Version::parse(v).unwrap())
+        .max()
+        .unwrap();
 
-    assert_eq!(*selected, "2.0.0");
+    assert_eq!(selected.to_string(), "2.0.0");
 }
 
 #[test]

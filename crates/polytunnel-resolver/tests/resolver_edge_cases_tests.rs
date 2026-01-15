@@ -293,10 +293,15 @@ fn test_resolver_nearest_version_selection() {
 
 #[test]
 fn test_resolver_newest_version_selection() {
+    use semver::Version;
     let versions = ["1.0.0", "1.1.0", "2.0.0"];
 
-    let newest = versions.iter().max().unwrap();
-    assert_eq!(*newest, "2.0.0");
+    let newest = versions
+        .iter()
+        .map(|v| Version::parse(v).unwrap())
+        .max()
+        .unwrap();
+    assert_eq!(newest.to_string(), "2.0.0");
 }
 
 #[test]

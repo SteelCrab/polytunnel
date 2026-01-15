@@ -85,10 +85,15 @@ fn test_resolver_version_range_evaluation() {
 
 #[test]
 fn test_resolver_newest_version_selection() {
+    use semver::Version;
     let versions = ["1.0.0", "1.1.0", "1.2.0", "1.1.5"];
 
-    let newest = versions.iter().max();
-    assert_eq!(newest, Some(&"1.2.0"));
+    let newest = versions
+        .iter()
+        .map(|v| Version::parse(v).unwrap())
+        .max()
+        .unwrap();
+    assert_eq!(newest.to_string(), "1.2.0");
 }
 
 #[test]
@@ -126,10 +131,15 @@ fn test_resolver_conflict_detection() {
 
 #[test]
 fn test_resolver_conflict_resolution_newest() {
-    let versions = ["4.12", "4.13.2"];
-    let winner = versions.iter().max().unwrap();
+    use semver::Version;
+    let versions = ["4.12.0", "4.13.2"];
+    let winner = versions
+        .iter()
+        .map(|v| Version::parse(v).unwrap())
+        .max()
+        .unwrap();
 
-    assert_eq!(*winner, "4.13.2");
+    assert_eq!(winner.to_string(), "4.13.2");
 }
 
 #[test]
