@@ -14,11 +14,15 @@ name: CI
 # Trigger conditions
 on:
   push:
-    # Run on all branches
-    branches: ["*"]
+    # Run on all branches except docs
+    branches:
+      - '**'
+      - '!docs'
   pull_request:
-    # Run on all pull requests
-    branches: ["*"]
+    # Run on all pull requests except docs
+    branches:
+      - '**'
+      - '!docs'
 
 env:
   # Use stable Rust toolchain
