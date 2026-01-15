@@ -282,11 +282,11 @@ jobs:
       - name: Generate code coverage
         run: cargo tarpaulin --workspace --timeout 300 --out Xml --exclude-files tests/*
 
-      # Upload coverage to codecov using Umbrella
-      - name: Upload coverage to Codecov
-        uses: codecov/umbrella@v0
+      # Upload coverage to codecov
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          files: ./cobertura.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # Job 13: Security audit of dependencies
   security:
