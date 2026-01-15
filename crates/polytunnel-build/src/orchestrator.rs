@@ -53,6 +53,25 @@ pub struct BuildOrchestrator {
 
 impl BuildOrchestrator {
     /// Create a new build orchestrator
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Project configuration from polytunnel.toml
+    ///
+    /// # Returns
+    ///
+    /// A new BuildOrchestrator instance
+    ///
+    /// # Errors
+    ///
+    /// * `BuildError::JavacNotFound` - If javac cannot be found in PATH
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
+    /// let orchestrator = BuildOrchestrator::new(config)?;
+    /// ```
     pub fn new(config: ProjectConfig) -> Result<Self> {
         let compiler = JavaCompiler::new(&config)?;
         let classpath_builder = ClasspathBuilder::new(config.clone());
@@ -68,9 +87,36 @@ impl BuildOrchestrator {
     }
 
     /// Execute full build (compile + tests)
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Build options (clean, skip_tests, verbose)
+    ///
+    /// # Returns
+    ///
+    /// BuildResult with compilation count and optional test results
+    ///
+    /// # Errors
+    ///
+    /// * `BuildError::CompilationFailed` - If compilation fails
+    /// * `BuildError::TestExecutionFailed` - If test execution fails (when not skipped)
+    /// * `BuildError::SourceDirNotFound` - If source directories don't exist
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let options = BuildOptions {
+    ///     clean: false,
+    ///     skip_tests: false,
+    ///     verbose: true,
+    /// };
+    /// let result = orchestrator.build(&options).await?;
+    /// println!("Compiled {} files", result.compiled_files);
+    /// ```
     pub async fn build(&mut self, options: &BuildOptions) -> Result<BuildResult> {
         let start = Instant::now();
 
+        // 1. Resolve and download dependencies
         if options.verbose {
             println!("Resolving dependencies...");
         }
@@ -78,6 +124,7 @@ impl BuildOrchestrator {
             .build_classpath(&self.config.build.cache_dir)
             .await?;
 
+        // 2. Clean if requested
         if options.clean {
             if options.verbose {
                 println!("Cleaning build artifacts...");
@@ -85,11 +132,13 @@ impl BuildOrchestrator {
             self.clean()?;
         }
 
+        // 3. Compile main sources
         if options.verbose {
             println!("Compiling main sources...");
         }
         let compiled = self.compile_sources().await?;
 
+        // 4. Compile and run tests (if not skipped)
         let test_result = if !options.skip_tests {
             if options.verbose {
                 println!("Compiling test sources...");

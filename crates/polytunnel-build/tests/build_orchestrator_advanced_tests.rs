@@ -369,20 +369,17 @@ fn test_orchestrator_build_config_cloning() {
 #[test]
 fn test_orchestrator_directory_defaults() {
     let config = create_test_config();
-
-    assert!(!config.build.source_dirs.is_empty() || config.build.source_dirs.is_empty());
-    assert!(!config.build.test_source_dirs.is_empty() || config.build.test_source_dirs.is_empty());
+    // Default config has standard Maven source directories
+    assert_eq!(config.build.source_dirs, vec!["src/main/java"]);
+    assert_eq!(config.build.test_source_dirs, vec!["src/test/java"]);
 }
 
 #[test]
 fn test_orchestrator_compiler_defaults() {
     let config = create_test_config();
-
-    // Verify defaults exist
-    assert!(config.build.compiler_args.is_empty() || !config.build.compiler_args.is_empty());
-    assert!(
-        config.build.test_compiler_args.is_empty() || !config.build.test_compiler_args.is_empty()
-    );
+    // Default config has no extra compiler args
+    assert!(config.build.compiler_args.is_empty());
+    assert!(config.build.test_compiler_args.is_empty());
 }
 
 #[test]
