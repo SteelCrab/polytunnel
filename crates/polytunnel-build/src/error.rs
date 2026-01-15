@@ -38,7 +38,15 @@ pub enum BuildError {
     #[error("Invalid dependency format: {input}")]
     InvalidDependency { input: String },
 
-    /// Core configuration error
-    #[error("Configuration error: {0}")]
-    Config(#[from] polytunnel_core::CoreError),
+    /// Maven error
+    #[error("Maven error: {0}")]
+    Maven(#[from] polytunnel_maven::MavenError),
+
+    /// Resolver error
+    #[error("Dependency resolution error: {0}")]
+    Resolver(#[from] polytunnel_resolver::ResolverError),
+
+    /// Core error
+    #[error("Core error: {0}")]
+    Core(#[from] polytunnel_core::CoreError),
 }
