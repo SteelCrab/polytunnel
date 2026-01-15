@@ -1,6 +1,6 @@
 //! Tests for coordinate module
 
-use polytunnel_maven::{Coordinate, CoordinateError};
+use polytunnel_maven::Coordinate;
 
 #[test]
 fn test_parse_gav() {

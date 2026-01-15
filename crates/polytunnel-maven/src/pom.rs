@@ -2,8 +2,8 @@
 
 use crate::coordinate::Coordinate;
 use polytunnel_core::Result;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use serde::{Deserialize, Serialize};
 
 /// Parsed POM file

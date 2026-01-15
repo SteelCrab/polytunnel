@@ -31,8 +31,8 @@ pub struct SearchResponseBody {
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchDoc {
     pub id: String,
-    pub g: String,           // groupId
-    pub a: String,           // artifactId
+    pub g: String, // groupId
+    pub a: String, // artifactId
     #[serde(rename = "latestVersion")]
     pub latest_version: Option<String>,
     #[serde(rename = "v")]
@@ -56,12 +56,10 @@ impl MavenClient {
 
     /// Search artifacts by query
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
-        let url = format!(
-            "{}?q={}&rows={}&wt=json",
-            MAVEN_SEARCH_URL, query, limit
-        );
+        let url = format!("{}?q={}&rows={}&wt=json", MAVEN_SEARCH_URL, query, limit);
 
-        let response: SearchResponse = self.http
+        let response: SearchResponse = self
+            .http
             .get(&url)
             .send()
             .await
@@ -82,7 +80,8 @@ impl MavenClient {
             coord.pom_filename()
         );
 
-        let content = self.http
+        let content = self
+            .http
             .get(&url)
             .send()
             .await
@@ -109,7 +108,8 @@ impl MavenClient {
             urlencoding::encode(&query)
         );
 
-        let response: SearchResponse = self.http
+        let response: SearchResponse = self
+            .http
             .get(&url)
             .send()
             .await
@@ -141,8 +141,9 @@ impl MavenClient {
     /// Download JAR to a path
     pub async fn download_jar(&self, coord: &Coordinate, dest: &PathBuf) -> Result<()> {
         let url = self.jar_url(coord);
-        
-        let bytes = self.http
+
+        let bytes = self
+            .http
             .get(&url)
             .send()
             .await

@@ -1,6 +1,9 @@
 //! Classpath management and dependency resolution
 
-use polytunnel_core::{AppError, ProjectConfig, Result};
+#[cfg(test)]
+use polytunnel_core::AppError;
+use polytunnel_core::{ProjectConfig, Result};
+#[cfg(test)]
 use polytunnel_maven::Coordinate;
 use std::path::PathBuf;
 
@@ -18,6 +21,7 @@ pub struct ClasspathResult {
 /// Builds and manages classpaths for compilation and execution
 #[derive(Debug, Clone)]
 pub struct ClasspathBuilder {
+    #[allow(dead_code)]
     config: ProjectConfig,
     cached_result: Option<ClasspathResult>,
 }
@@ -65,7 +69,7 @@ impl ClasspathBuilder {
     /// ```ignore
     /// let result = builder.build_classpath(".polytunnel/cache").await?;
     /// ```
-    pub async fn build_classpath(&mut self, cache_dir: &str) -> Result<ClasspathResult> {
+    pub async fn build_classpath(&mut self, _cache_dir: &str) -> Result<ClasspathResult> {
         // For now, return empty classpaths
         // Full implementation will use Resolver and MavenClient
         let result = ClasspathResult {
@@ -94,14 +98,17 @@ impl ClasspathBuilder {
     /// let classpaths = builder.get_cached_classpath();
     /// ```
     pub fn get_cached_classpath(&self) -> ClasspathResult {
-        self.cached_result.clone().unwrap_or_else(|| ClasspathResult {
-            compile_classpath: vec![],
-            test_classpath: vec![],
-            runtime_classpath: vec![],
-        })
+        self.cached_result
+            .clone()
+            .unwrap_or_else(|| ClasspathResult {
+                compile_classpath: vec![],
+                test_classpath: vec![],
+                runtime_classpath: vec![],
+            })
     }
 
     /// Convert classpaths to platform-specific string
+    #[cfg(test)]
     fn format_classpath(paths: &[PathBuf]) -> String {
         let separator = if cfg!(windows) { ";" } else { ":" };
         paths
@@ -112,6 +119,7 @@ impl ClasspathBuilder {
     }
 
     /// Parse Maven coordinate from dependency key
+    #[cfg(test)]
     fn parse_coordinate(key: &str) -> Result<Coordinate> {
         let parts: Vec<&str> = key.split(':').collect();
         if parts.len() < 2 {

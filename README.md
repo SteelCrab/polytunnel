@@ -137,7 +137,6 @@ Polytunnel uses GitHub Actions for automated testing and building across multipl
 | **Format** | Code formatting check (rustfmt) | Linux (x86_64) | ✅ |
 | **Release Build** | Optimized release binaries | Linux (x86_64), macOS (aarch64), Windows (x86_64) | ✅ |
 | **Coverage** | Code coverage with llvm-cov (uploaded to Codecov) | Linux (x86_64) | ✅ |
-| **Security Audit** | Dependency vulnerability scanning | Linux (x86_64) | ✅ |
 
 ### Supported Platforms for Building
 

@@ -129,7 +129,7 @@ async fn cmd_tree() -> Result<()> {
 }
 
 async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
-    let start = Instant::now();
+    let _start = Instant::now();
 
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;

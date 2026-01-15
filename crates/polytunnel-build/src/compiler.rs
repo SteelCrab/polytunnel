@@ -141,6 +141,7 @@ impl JavaCompiler {
     }
 
     /// Find javac executable in PATH or JAVA_HOME
+    #[allow(clippy::collapsible_if)]
     fn find_javac() -> Result<PathBuf> {
         // Try to find javac in PATH
         if let Ok(output) = Command::new("which")
@@ -170,10 +171,8 @@ impl JavaCompiler {
         }
 
         // Try direct javac on Windows
-        if cfg!(windows) {
-            if Command::new("javac.exe").arg("-version").output().is_ok() {
-                return Ok(PathBuf::from("javac.exe"));
-            }
+        if cfg!(windows) && Command::new("javac.exe").arg("-version").output().is_ok() {
+            return Ok(PathBuf::from("javac.exe"));
         }
 
         Err(AppError::JavacNotFound)

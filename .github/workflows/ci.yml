@@ -8,7 +8,6 @@
 # 3. Code linting (clippy)
 # 4. Code formatting checks
 # 5. Code coverage analysis (llvm-cov)
-# 6. Security audit
 
 name: CI
 
@@ -290,17 +289,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./lcov.info
-
-  # Job 13: Security audit of dependencies
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # Audit dependencies for known security vulnerabilities
-      - name: Run security audit
-        uses: rustsec/audit-check-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}

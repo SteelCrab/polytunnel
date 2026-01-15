@@ -55,6 +55,7 @@ pub struct BuildOrchestrator {
     pub config: ProjectConfig,
     classpath_builder: ClasspathBuilder,
     compiler: JavaCompiler,
+    #[allow(dead_code)]
     test_runner: Option<TestRunner>,
     incremental: BuildCache,
 }

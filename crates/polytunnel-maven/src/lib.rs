@@ -8,4 +8,4 @@ mod pom;
 
 pub use client::{MavenClient, SearchDoc, SearchResponse};
 pub use coordinate::{Coordinate, CoordinateError};
-pub use pom::{parse_pom, DependencyScope, Exclusion, Pom, PomDependency};
+pub use pom::{DependencyScope, Exclusion, Pom, PomDependency, parse_pom};

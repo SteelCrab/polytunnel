@@ -2,7 +2,6 @@
 
 use polytunnel_core::Result;
 use std::path::PathBuf;
-use std::process::Command;
 
 /// Supported test frameworks
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,8 +55,11 @@ pub struct TestResult {
 
 /// Test runner for Java projects
 pub struct TestRunner {
+    #[allow(dead_code)]
     framework: TestFramework,
+    #[allow(dead_code)]
     classpath: Vec<PathBuf>,
+    #[allow(dead_code)]
     test_output_dir: PathBuf,
 }
 
@@ -83,7 +85,11 @@ impl TestRunner {
     ///     PathBuf::from("target/test-classes"),
     /// );
     /// ```
-    pub fn new(framework: TestFramework, classpath: Vec<PathBuf>, test_output_dir: PathBuf) -> Self {
+    pub fn new(
+        framework: TestFramework,
+        classpath: Vec<PathBuf>,
+        test_output_dir: PathBuf,
+    ) -> Self {
         Self {
             framework,
             classpath,
@@ -117,9 +123,13 @@ impl TestRunner {
                 || p.to_string_lossy().contains("junit-platform")
         });
 
-        let has_junit4 = classpath.iter().any(|p| p.to_string_lossy().contains("junit-4"));
+        let has_junit4 = classpath
+            .iter()
+            .any(|p| p.to_string_lossy().contains("junit-4"));
 
-        let has_testng = classpath.iter().any(|p| p.to_string_lossy().contains("testng"));
+        let has_testng = classpath
+            .iter()
+            .any(|p| p.to_string_lossy().contains("testng"));
 
         // Priority: JUnit 5 > JUnit 4 > TestNG
         if has_junit5 {
@@ -159,9 +169,9 @@ impl TestRunner {
     /// ```
     pub async fn run(
         &self,
-        pattern: Option<String>,
-        verbose: bool,
-        fail_fast: bool,
+        _pattern: Option<String>,
+        _verbose: bool,
+        _fail_fast: bool,
     ) -> Result<TestResult> {
         // For now, return a placeholder result
         // Full implementation will vary by framework
@@ -175,6 +185,7 @@ impl TestRunner {
     }
 
     /// Find all test classes in test output directory
+    #[allow(dead_code)]
     fn find_test_classes(&self) -> Result<Vec<String>> {
         let mut classes = Vec::new();
 
@@ -189,9 +200,7 @@ impl TestRunner {
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("class") {
                 // Convert file path to fully qualified class name
-                let relative = path
-                    .strip_prefix(&self.test_output_dir)
-                    .unwrap_or(path);
+                let relative = path.strip_prefix(&self.test_output_dir).unwrap_or(path);
                 let class_name = relative
                     .to_string_lossy()
                     .replace(std::path::MAIN_SEPARATOR, ".")
@@ -217,6 +226,7 @@ impl TestRunner {
     }
 
     /// Format classpath for command line
+    #[allow(dead_code)]
     fn format_classpath(&self) -> String {
         let separator = if cfg!(windows) { ";" } else { ":" };
         let mut paths = self.classpath.clone();

@@ -59,7 +59,10 @@ impl BuildCache {
             HashMap::new()
         };
 
-        Ok(Self { entries, cache_file })
+        Ok(Self {
+            entries,
+            cache_file,
+        })
     }
 
     /// Update cache for compiled sources
@@ -81,6 +84,7 @@ impl BuildCache {
     /// ```ignore
     /// cache.update_for_sources(&[PathBuf::from("src/Main.java")])?;
     /// ```
+    #[allow(clippy::collapsible_if)]
     pub fn update_for_sources(&mut self, source_files: &[PathBuf]) -> Result<()> {
         for source_file in source_files {
             if let Ok(metadata) = std::fs::metadata(source_file) {
