@@ -54,7 +54,6 @@ pub struct Exclusion {
 }
 
 /// Parse POM XML content
-
 fn inject_project_properties(pom: &mut Pom) {
     if !pom.coordinate.version.is_empty() {
         pom.properties.insert(
