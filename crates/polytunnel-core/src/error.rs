@@ -1,45 +1,32 @@
-//! Error types for polytunnel-core
+//! Core error types for polytunnel
+//!
+//! Configuration and basic IO errors used across all crates.
 
 use thiserror::Error;
 
-/// Result type alias using AppError
-pub type Result<T> = std::result::Result<T, AppError>;
+/// Result type alias for core operations
+pub type Result<T> = std::result::Result<T, CoreError>;
 
+/// Core errors for configuration and basic IO
 #[derive(Debug, Error)]
-pub enum AppError {
+pub enum CoreError {
+    /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// TOML parse error
     #[error("TOML parse error: {0}")]
     TomlParse(#[from] toml::de::Error),
 
+    /// TOML serialize error
     #[error("TOML serialize error: {0}")]
     TomlSerialize(#[from] toml::ser::Error),
 
+    /// Config file not found
     #[error("Config not found: {path}")]
     ConfigNotFound { path: String },
-
-    #[error("Invalid dependency format: {input}")]
-    InvalidDependency { input: String },
-
-    #[error("Dependency not found: {group_id}:{artifact_id}")]
-    DependencyNotFound {
-        group_id: String,
-        artifact_id: String,
-    },
-
-    #[error("Compilation failed: {message}")]
-    CompilationFailed { message: String },
-
-    #[error("Test execution failed: {message}")]
-    TestExecutionFailed { message: String },
-
-    #[error("Java compiler not found in PATH")]
-    JavacNotFound,
-
-    #[error("Test framework not detected. Available: {available}")]
-    TestFrameworkNotDetected { available: String },
-
-    #[error("Source directory not found: {path}")]
-    SourceDirNotFound { path: String },
 }
+
+// Keep AppError as alias for backward compatibility during migration
+#[deprecated(note = "Use crate-specific error types instead")]
+pub type AppError = CoreError;

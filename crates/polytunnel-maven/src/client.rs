@@ -1,8 +1,8 @@
 //! Maven Central API client
 
 use crate::coordinate::Coordinate;
+use crate::error::Result;
 use crate::pom::Pom;
-use polytunnel_core::Result;
 use reqwest::Client;
 use std::path::PathBuf;
 
@@ -58,15 +58,7 @@ impl MavenClient {
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
         let url = format!("{}?q={}&rows={}&wt=json", MAVEN_SEARCH_URL, query, limit);
 
-        let response: SearchResponse = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?
-            .json()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?;
+        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
 
         Ok(response.response.docs)
     }
@@ -80,15 +72,7 @@ impl MavenClient {
             coord.pom_filename()
         );
 
-        let content = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?
-            .text()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?;
+        let content = self.http.get(&url).send().await?.text().await?;
 
         Ok(content)
     }
@@ -108,15 +92,7 @@ impl MavenClient {
             urlencoding::encode(&query)
         );
 
-        let response: SearchResponse = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?
-            .json()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?;
+        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
 
         let versions: Vec<String> = response
             .response
@@ -142,15 +118,7 @@ impl MavenClient {
     pub async fn download_jar(&self, coord: &Coordinate, dest: &PathBuf) -> Result<()> {
         let url = self.jar_url(coord);
 
-        let bytes = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?
-            .bytes()
-            .await
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e.to_string())))?;
+        let bytes = self.http.get(&url).send().await?.bytes().await?;
 
         std::fs::write(dest, bytes)?;
         Ok(())

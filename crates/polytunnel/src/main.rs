@@ -1,8 +1,10 @@
 use clap::{Parser, Subcommand};
-use polytunnel_build::{BuildOptions, BuildOrchestrator, TestOptions};
-use polytunnel_core::{AppError, ProjectConfig, Result};
+use polytunnel_build::{BuildError, BuildOptions, BuildOrchestrator, TestOptions};
+use polytunnel_core::ProjectConfig;
 use std::path::Path;
 use std::time::Instant;
+
+type Result<T> = std::result::Result<T, BuildError>;
 
 #[derive(Parser)]
 #[command(name = "pt")]
@@ -179,7 +181,7 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
                 }
             }
 
-            return Err(AppError::TestExecutionFailed {
+            return Err(BuildError::TestExecutionFailed {
                 message: format!("{} test(s) failed", test_result.failed),
             });
         }
@@ -246,7 +248,7 @@ async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Re
         }
 
         println!("{}", "=".repeat(60));
-        return Err(AppError::TestExecutionFailed {
+        return Err(BuildError::TestExecutionFailed {
             message: format!("{} test(s) failed", result.failed),
         });
     }

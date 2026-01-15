@@ -1,6 +1,7 @@
 //! Java compiler wrapper for javac
 
-use polytunnel_core::{AppError, ProjectConfig, Result};
+use crate::error::{BuildError, Result};
+use polytunnel_core::ProjectConfig;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -124,7 +125,7 @@ impl JavaCompiler {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
         if !success {
-            return Err(AppError::CompilationFailed {
+            return Err(BuildError::CompilationFailed {
                 message: format!(
                     "Compilation failed with {} file(s).\n{}",
                     source_files.len(),
@@ -175,7 +176,7 @@ impl JavaCompiler {
             return Ok(PathBuf::from("javac.exe"));
         }
 
-        Err(AppError::JavacNotFound)
+        Err(BuildError::JavacNotFound)
     }
 
     /// Format classpath for command line
