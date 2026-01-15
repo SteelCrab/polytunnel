@@ -120,7 +120,7 @@ fn test_resolver_scope_runtime_transitive() {
 
 #[test]
 fn test_resolver_optional_dependency_excluded() {
-    let optional_deps = vec!["lib1"];
+    let optional_deps = ["lib1"];
     let included_deps: Vec<_> = optional_deps.iter().filter(|_| false).collect();
 
     assert_eq!(included_deps.len(), 0);
@@ -128,7 +128,7 @@ fn test_resolver_optional_dependency_excluded() {
 
 #[test]
 fn test_resolver_optional_dependency_included() {
-    let optional_deps = vec!["lib1"];
+    let optional_deps = ["lib1"];
     let included_deps: Vec<_> = optional_deps.iter().filter(|_| true).collect();
 
     assert_eq!(included_deps.len(), 1);
@@ -250,12 +250,12 @@ fn test_resolver_malformed_coordinates() {
 #[test]
 fn test_resolver_empty_classifier() {
     let classifier = "";
-    assert!(classifier.is_empty());
+    assert_eq!(classifier, "");
 }
 
 #[test]
 fn test_resolver_snapshot_version_precedence() {
-    let versions = vec!["1.0.0-SNAPSHOT", "1.0.0-RC1", "1.0.0"];
+    let versions = ["1.0.0-SNAPSHOT", "1.0.0-RC1", "1.0.0"];
 
     let releases: Vec<_> = versions.iter().filter(|v| !v.contains("-")).collect();
     assert_eq!(releases.len(), 1);
@@ -263,7 +263,7 @@ fn test_resolver_snapshot_version_precedence() {
 
 #[test]
 fn test_resolver_release_version_selection() {
-    let versions = vec!["1.0.0-alpha", "1.0.0-beta", "1.0.0"];
+    let versions = ["1.0.0-alpha", "1.0.0-beta", "1.0.0"];
 
     let selected = versions.iter().filter(|v| !v.contains("-")).max().unwrap();
     assert_eq!(*selected, "1.0.0");
@@ -271,11 +271,11 @@ fn test_resolver_release_version_selection() {
 
 #[test]
 fn test_resolver_version_gap_in_range() {
-    let available = vec!["1.0.0", "1.5.0", "2.5.0"];
+    let available = ["1.0.0", "1.5.0", "2.5.0"];
 
     let in_range: Vec<_> = available
         .iter()
-        .filter(|v| v >= &&"1.0.0" && v < &&"2.0.0")
+        .filter(|v| ("1.0.0".."2.0.0").contains(*v))
         .collect();
 
     assert_eq!(in_range.len(), 2);
@@ -285,7 +285,7 @@ fn test_resolver_version_gap_in_range() {
 fn test_resolver_nearest_version_selection() {
     // Nearest-first: closer dependency wins
     let depth_1 = "1.0.0";
-    let depth_2 = "2.0.0";
+    let _depth_2 = "2.0.0";
 
     // Depth 1 should win
     assert_eq!(depth_1, "1.0.0");
@@ -293,7 +293,7 @@ fn test_resolver_nearest_version_selection() {
 
 #[test]
 fn test_resolver_newest_version_selection() {
-    let versions = vec!["1.0.0", "1.1.0", "2.0.0"];
+    let versions = ["1.0.0", "1.1.0", "2.0.0"];
 
     let newest = versions.iter().max().unwrap();
     assert_eq!(*newest, "2.0.0");
@@ -364,13 +364,13 @@ fn test_resolver_invalid_pom_xml() {
 
 #[test]
 fn test_resolver_empty_pom() {
-    let empty_deps: Vec<String> = vec![];
+    let empty_deps: [String; 0] = [];
     assert_eq!(empty_deps.len(), 0);
 }
 
 #[test]
 fn test_resolver_platform_classifier_selection() {
-    let classifiers = vec!["natives-windows", "natives-linux", "natives-mac"];
+    let classifiers = ["natives-windows", "natives-linux", "natives-mac"];
 
     for classifier in classifiers {
         assert!(!classifier.is_empty());
@@ -380,9 +380,9 @@ fn test_resolver_platform_classifier_selection() {
 #[test]
 fn test_resolver_classifier_exclusion() {
     let mut jars = vec![
-        "lib-1.0.0.jar",
-        "lib-1.0.0-sources.jar",
-        "lib-1.0.0-javadoc.jar",
+        "lib-1.0.0.jar".to_string(),
+        "lib-1.0.0-sources.jar".to_string(),
+        "lib-1.0.0-javadoc.jar".to_string(),
     ];
 
     // Exclude classifier artifacts
@@ -393,17 +393,17 @@ fn test_resolver_classifier_exclusion() {
 
 #[test]
 fn test_resolver_parallel_download_simulation() {
-    let artifacts = vec!["art1", "art2", "art3", "art4"];
+    let artifacts = ["art1", "art2", "art3", "art4"];
     let batch_size = 2;
 
-    let num_batches = (artifacts.len() + batch_size - 1) / batch_size;
+    let num_batches = artifacts.len().div_ceil(batch_size);
     assert_eq!(num_batches, 2);
 }
 
 #[test]
 fn test_resolver_sequential_download_simulation() {
-    let artifacts = vec!["art1", "art2", "art3"];
-    let total_time = artifacts.len() * 1; // 1 unit per artifact
+    let artifacts = ["art1", "art2", "art3"];
+    let total_time = artifacts.len(); // 1 unit per artifact
 
     assert_eq!(total_time, 3);
 }
@@ -438,7 +438,7 @@ fn test_resolver_online_mode_checks_remote() {
 
 #[test]
 fn test_resolver_prefer_release_over_snapshot() {
-    let versions = vec!["1.0.0-SNAPSHOT", "1.0.0"];
+    let versions = ["1.0.0-SNAPSHOT", "1.0.0"];
 
     let releases: Vec<_> = versions
         .iter()
@@ -458,8 +458,7 @@ fn test_resolver_composite_range_evaluation() {
     let version = "1.5.0";
 
     // Range: [1.0, 1.9] OR [2.0, 3.0]
-    let in_range =
-        (version >= "1.0.0" && version < "1.9.9") || (version >= "2.0.0" && version < "3.0.0");
+    let in_range = ("1.0.0".."1.9.9").contains(&version) || ("2.0.0".."3.0.0").contains(&version);
 
     assert!(in_range);
 }
