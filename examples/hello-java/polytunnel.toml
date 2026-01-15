@@ -3,8 +3,8 @@ name = "hello-java"
 java_version = "17"
 
 [build]
-source_dirs = ["src/main/java"]
-test_source_dirs = ["src/test/java"]
+source_dirs = ["app/src/main/java"]
+test_source_dirs = ["app/src/test/java"]
 output_dir = "target/classes"
 test_output_dir = "target/test-classes"
 compiler_args = []
