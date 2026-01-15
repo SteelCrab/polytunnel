@@ -1,6 +1,6 @@
 //! Test framework detection and execution
 
-use polytunnel_core::Result;
+use crate::error::Result;
 use std::path::PathBuf;
 
 /// Supported test frameworks
@@ -170,18 +170,114 @@ impl TestRunner {
     pub async fn run(
         &self,
         _pattern: Option<String>,
-        _verbose: bool,
+        verbose: bool,
         _fail_fast: bool,
     ) -> Result<TestResult> {
-        // For now, return a placeholder result
-        // Full implementation will vary by framework
+        let test_classes = self.find_test_classes()?;
+        if test_classes.is_empty() {
+             return Ok(TestResult {
+                 total: 0,
+                 passed: 0,
+                 failed: 0,
+                 skipped: 0,
+                 failures: vec![],
+             });
+        }
+
+        match self.framework {
+            TestFramework::JUnit5 => self.run_junit5(&test_classes, verbose).await,
+            // Fallback for others (pending implementation)
+            _ => Ok(TestResult {
+                 total: 0,
+                 passed: 0,
+                 failed: 0,
+                 skipped: 0,
+                 failures: vec![],
+             }), 
+        }
+    }
+
+    async fn run_junit5(&self, test_classes: &[String], verbose: bool) -> Result<TestResult> {
+        // Construct classpath string
+        let classpath = self.format_classpath();
+        
+        let mut args = vec![
+            "-jar".to_string(),
+            self.find_junit_console_launcher()?, 
+            "-cp".to_string(),
+            classpath,
+        ];
+        
+        // Add test classes
+        for class in test_classes {
+            args.push("-c".to_string());
+            args.push(class.clone());
+        }
+
+        if verbose {
+            println!("Executing JUnit 5 with args: {:?}", args);
+        }
+
+        let output = std::process::Command::new("java")
+            .args(&args)
+            .output()
+            .map_err(crate::error::BuildError::Io)?;
+
+        if verbose {
+            println!("Test Output:\n{}", String::from_utf8_lossy(&output.stdout));
+            if !output.stderr.is_empty() {
+                println!("Test Error Output:\n{}", String::from_utf8_lossy(&output.stderr));
+            }
+        }
+        
+        // Parse output
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        
+        let passed = if let Some(cap) = stdout.lines()
+            .find(|l| l.contains("tests successful"))
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            cap
+        } else {
+            0
+        };
+
+        let failed = if let Some(cap) = stdout.lines()
+            .find(|l| l.contains("tests failed"))
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            cap
+        } else {
+            0
+        };
+        
+        // Total is sum of passed + failed + aborted/skipped if we parse them
+        // For now, let's trust the "tests found" line or just sum passed + failed
+        let total = if let Some(cap) = stdout.lines()
+            .find(|l| l.contains("tests found"))
+            .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok())) {
+            cap
+        } else {
+            passed + failed
+        };
+
         Ok(TestResult {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            failures: vec![],
+            total,
+            passed,
+            failed,
+            skipped: total.saturating_sub(passed + failed),
+            failures: vec![], // Details would require XML report parsing
         })
+    }
+
+    fn find_junit_console_launcher(&self) -> Result<String> {
+        // Ideally this should be resolved from dependencies or bundled
+        // For Phase 3 MVP, we'll try to find it in the classpath
+        self.classpath
+            .iter()
+            .find(|p| p.to_string_lossy().contains("junit-platform-console-standalone"))
+            .map(|p| p.to_string_lossy().to_string())
+            .ok_or_else(|| crate::error::BuildError::TestExecutionFailed { 
+                message: "JUnit Platform Console Standalone JAR not found in classpath. Please add 'org.junit.platform:junit-platform-console-standalone' dependency.".to_string() 
+            })
     }
 
     /// Find all test classes in test output directory

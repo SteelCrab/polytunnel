@@ -234,16 +234,44 @@ impl BuildOrchestrator {
     }
 
     /// Run tests
-    pub async fn run_tests(&mut self, _options: &TestOptions) -> Result<TestResult> {
-        // For now, return a placeholder result
-        // Full implementation in test_runner.rs
-        Ok(TestResult {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            failures: vec![],
-        })
+    pub async fn run_tests(&mut self, options: &TestOptions) -> Result<TestResult> {
+        let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
+
+        // Construct full classpath for tests (compile + test + test_output + output)
+        let classpaths = self.classpath_builder.get_cached_classpath();
+        let mut full_classpath = classpaths.test_classpath.clone();
+
+        // Add main classes and test classes to classpath
+        full_classpath.push(PathBuf::from(&self.config.build.output_dir));
+        full_classpath.push(test_output_dir.clone());
+
+        // Detect framework
+        let framework =
+            if let Some(fw) = crate::test_runner::TestRunner::detect_framework(&full_classpath) {
+                fw
+            } else {
+                if options.verbose {
+                    println!("No supported test framework detected.");
+                }
+                return Ok(TestResult {
+                    total: 0,
+                    passed: 0,
+                    failed: 0,
+                    skipped: 0,
+                    failures: vec![],
+                });
+            };
+
+        if options.verbose {
+            println!("Detected test framework: {}", framework.name());
+        }
+
+        let runner =
+            crate::test_runner::TestRunner::new(framework, full_classpath, test_output_dir);
+
+        runner
+            .run(options.pattern.clone(), options.verbose, options.fail_fast)
+            .await
     }
 
     /// Clean build artifacts
