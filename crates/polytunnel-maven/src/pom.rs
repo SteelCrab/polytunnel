@@ -91,6 +91,14 @@ fn inject_project_properties(pom: &mut Pom) {
 }
 
 pub fn parse_pom(xml: &str) -> Result<Pom> {
+    // Detect if response is HTML (likely an error page from Maven Central)
+    let trimmed = xml.trim();
+    if trimmed.starts_with("<!DOCTYPE") || trimmed.starts_with("<html") {
+        return Err(MavenError::XmlParse {
+            message: "Received HTML response instead of POM XML (likely 404 or server error from Maven Central)".to_string(),
+        });
+    }
+
     let mut reader = Reader::from_str(xml);
     // ... existing initialization ...
     reader.config_mut().trim_text(true);
@@ -263,12 +271,16 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
     // Apply property substitution to dependencies
     let properties = &pom.properties;
     for dep in &mut pom.dependencies {
+        dep.group_id = resolve_value(&dep.group_id, properties);
+        dep.artifact_id = resolve_value(&dep.artifact_id, properties);
         if let Some(v) = &dep.version {
             dep.version = Some(resolve_value(v, properties));
         }
     }
 
     for dep in &mut pom.dependency_management {
+        dep.group_id = resolve_value(&dep.group_id, properties);
+        dep.artifact_id = resolve_value(&dep.artifact_id, properties);
         if let Some(v) = &dep.version {
             dep.version = Some(resolve_value(v, properties));
         }
