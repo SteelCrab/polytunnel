@@ -54,7 +54,6 @@ pub struct Exclusion {
 }
 
 /// Parse POM XML content
-
 fn inject_project_properties(pom: &mut Pom) {
     if !pom.coordinate.version.is_empty() {
         pom.properties.insert(
@@ -385,11 +384,10 @@ impl Pom {
             if dep.artifact_id.contains("${") {
                 dep.artifact_id = resolve_value(&dep.artifact_id, props);
             }
-            if let Some(v) = &dep.version {
-                if v.contains("${") {
+            if let Some(v) = &dep.version
+                && v.contains("${") {
                     dep.version = Some(resolve_value(v, props));
                 }
-            }
         }
     }
 
@@ -402,12 +400,11 @@ impl Pom {
             if dep.version.is_none() {
                 // Find in dependency_management
                 for dm in &self.dependency_management {
-                    if dm.group_id == dep.group_id && dm.artifact_id == dep.artifact_id {
-                        if let Some(v) = &dm.version {
+                    if dm.group_id == dep.group_id && dm.artifact_id == dep.artifact_id
+                        && let Some(v) = &dm.version {
                             dep.version = Some(v.clone());
                             break;
                         }
-                    }
                 }
             }
         }
