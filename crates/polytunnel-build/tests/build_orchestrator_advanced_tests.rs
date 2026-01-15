@@ -433,10 +433,8 @@ fn test_orchestrator_error_handling_capability() {
     let result = BuildOrchestrator::new(config);
 
     // Result type indicates error handling is in place
-    match result {
-        Ok(_) => assert!(true),
-        Err(_) => assert!(true), // Error case handled
-    }
+    assert!(result.is_ok());
+    // Error case handled by the fact that it's a Result
 }
 
 #[test]

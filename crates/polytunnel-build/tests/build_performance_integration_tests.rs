@@ -50,7 +50,7 @@ fn test_incremental_build_cache_hit() {
 
 #[test]
 fn test_build_parallelization_opportunity() {
-    let files = vec![
+    let files = [
         "src/main/java/File1.java",
         "src/main/java/File2.java",
         "src/main/java/File3.java",
@@ -84,6 +84,7 @@ fn test_build_artifact_jar_caching() {
 
 #[test]
 fn test_build_incremental_compilation_tracking() {
+    #[allow(dead_code)]
     #[derive(Clone)]
     struct CompileEntry {
         file: String,
@@ -102,7 +103,7 @@ fn test_build_incremental_compilation_tracking() {
 
 #[test]
 fn test_build_dependency_download_parallelization() {
-    let deps = vec![
+    let deps = [
         "org.junit.jupiter:junit-jupiter:5.10.0",
         "org.mockito:mockito-core:5.2.0",
         "org.springframework:spring-core:6.0.0",
@@ -143,9 +144,9 @@ fn test_build_concurrent_compilation_jobs() {
 
 #[test]
 fn test_build_io_optimization_batching() {
-    let batch_size = 100;
-    let total_files = 350;
-    let num_batches = (total_files + batch_size - 1) / batch_size;
+    let batch_size: usize = 100;
+    let total_files: usize = 350;
+    let num_batches = total_files.div_ceil(batch_size);
 
     assert_eq!(num_batches, 4);
 }
@@ -228,7 +229,7 @@ fn test_build_nested_package_handling() {
 
 #[test]
 fn test_build_classpath_construction_ordering() {
-    let deps = vec!["lib1.jar", "lib2.jar", "lib3.jar"];
+    let deps = ["lib1.jar", "lib2.jar", "lib3.jar"];
     let classpath = deps.join(":");
 
     assert!(classpath.starts_with("lib1.jar"));
@@ -286,7 +287,7 @@ fn test_build_dependency_tree_depth() {
 #[test]
 fn test_build_artifact_resolution_strategy() {
     let strategy = "nearest-first";
-    assert!(!strategy.is_empty());
+    assert_eq!(strategy, "nearest-first");
 }
 
 #[test]
