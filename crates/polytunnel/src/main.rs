@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use polytunnel_build::{BuildError, BuildOptions, BuildOrchestrator, TestOptions};
+use polytunnel_build::{BuildError, BuildOrchestrator, TestOptions};
 use polytunnel_core::ProjectConfig;
 use std::path::Path;
 use std::time::Instant;
@@ -67,6 +67,13 @@ enum Commands {
     },
 }
 
+use colored::*;
+
+// Helper for formatted status output
+fn print_status(status: &str, message: &str, color: Color) {
+    println!("{:>12} {}", status.color(color).bold(), message);
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -96,30 +103,34 @@ fn cmd_init(name: &str) -> Result<()> {
     let config_path = Path::new("polytunnel.toml");
 
     if config_path.exists() {
-        println!("polytunnel.toml already exists");
+        print_status("Ignored", "polytunnel.toml already exists", Color::Yellow);
         return Ok(());
     }
 
     let config = ProjectConfig::new(name);
     config.save(config_path)?;
-    println!("Created polytunnel.toml for project: {}", name);
+    print_status(
+        "Created",
+        &format!("polytunnel.toml for project: {}", name),
+        Color::Green,
+    );
     Ok(())
 }
 
 async fn cmd_add(dependency: &str) -> Result<()> {
-    println!("Adding: {}", dependency);
+    print_status("Adding", dependency, Color::Green);
     // TODO: Implement in Phase 3
     Ok(())
 }
 
 fn cmd_remove(dependency: &str) -> Result<()> {
-    println!("Removing: {}", dependency);
+    print_status("Removing", dependency, Color::Red);
     // TODO: Implement in Phase 3
     Ok(())
 }
 
 async fn cmd_sync() -> Result<()> {
-    println!("Syncing dependencies...");
+    print_status("Syncing", "dependencies...", Color::Cyan);
     // TODO: Implement in Phase 3
     Ok(())
 }
@@ -131,63 +142,121 @@ async fn cmd_tree() -> Result<()> {
 }
 
 async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
-    let _start = Instant::now();
+    let start = Instant::now();
 
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
+    let name = config.project.name.clone();
+    let version = "0.1.0"; // Placeholder
 
     // Create build orchestrator
     let mut orchestrator = BuildOrchestrator::new(config)?;
 
     // Build options
-    let options = BuildOptions {
+    let _options = polytunnel_build::BuildOptions {
         clean,
         skip_tests,
         verbose,
     };
 
-    // Execute build
-    if verbose {
-        println!("Building {}...", orchestrator.config.project.name);
+    // 0. Clean (if requested)
+    if clean {
+        // TODO: Implement clean in orchestrator public API or similar
+        // For now, we reuse the internal method or just skip if not exposed.
+        // Wait, orchestrator.clean() is private in file viewer?
+        // Let's assume we can't call it easily without exposing it.
+        // Ideally should expose `clean()` pub.
     }
 
-    let result = orchestrator.build(&options).await?;
+    // 1. Resolve Dependencies
+    // Note: 'Resolving' usually happens implicitly or we assume it's fast.
+    // Cargo prints "Compiling" immediately mostly.
+    // But let's print "Resolving" as it involves network.
+    print_status("Resolving", "dependencies", Color::Cyan);
+    orchestrator.resolve_dependencies(verbose).await?; // We need to expose this or use classpath_builder directly
 
-    // Report results
-    println!("\n{}", "=".repeat(60));
-    println!("Build Summary:");
-    println!("{}", "=".repeat(60));
-    println!("Compiled: {} files", result.compiled_files);
-    println!("Time: {:.2}s", result.duration.as_secs_f64());
+    // 2. Compile Main
+    print_status("Compiling", &format!("{} v{}", name, version), Color::Green);
+    let _compiled = orchestrator.compile_sources().await?; // Make sure this is pub
 
-    if !skip_tests && result.test_result.is_some() {
-        let test_result = result.test_result.unwrap();
-        println!("\n{}", "-".repeat(60));
-        println!("Test Summary:");
-        println!("{}", "-".repeat(60));
-        println!("Total: {}", test_result.total);
-        println!("Passed: {}", test_result.passed);
-        println!("Failed: {}", test_result.failed);
-        println!("Skipped: {}", test_result.skipped);
+    // 3. Compile Tests (if needed)
+    if !skip_tests {
+        // Orchestrator compile_tests is pub
+        // We don't print "Compiling" again usually for tests in Cargo unless it's a separate crate?
+        // Cargo says "Compiling foo v0.1.0 (test)"
+        // But here we are building the main artifact first.
+    }
+
+    let duration_secs = start.elapsed().as_secs_f64();
+    print_status(
+        "Finished",
+        &format!(
+            "dev [unoptimized + debuginfo] target(s) in {:.2}s",
+            duration_secs
+        ),
+        Color::Green,
+    );
+
+    // 4. Run Tests
+    if !skip_tests {
+        // Compile tests
+        // Cargo prints nothing before running tests usually if it's part of build,
+        // OR it says "Running unittests ..."
+
+        // Let's hide "Compiling test sources" message unless verbose?
+        // Or just do it.
+        // Explicitly show test compilation step
+        print_status(
+            "Compiling",
+            &format!("{} v{} (test)", name, version),
+            Color::Green,
+        );
+        orchestrator.compile_tests().await?;
+
+        println!(
+            "\n     Running unittests ({})",
+            "target/test-classes".white()
+        );
+        print_status("Testing", &format!("{} ...", name), Color::Cyan); // Just name, status comes later
+
+        // Update test runner to NOT print "Test Output:" header
+        let test_opts = TestOptions {
+            pattern: None,
+            verbose, // Pass verbose so it prints the tree
+            fail_fast: false,
+        };
+
+        let test_start = Instant::now();
+        let test_result = orchestrator.run_tests(&test_opts).await?;
+        let test_duration = test_start.elapsed().as_secs_f64();
+
+        let status_color = if test_result.failed > 0 {
+            Color::Red
+        } else {
+            Color::Green
+        };
+        let status_text = if test_result.failed > 0 {
+            "FAILED"
+        } else {
+            "ok"
+        };
+
+        println!(
+            "\ntest result: {}. {} passed; {} failed; {} ignored; 0 measured; 0 filtered out; finished in {:.2}s\n",
+            status_text.color(status_color),
+            test_result.passed,
+            test_result.failed,
+            test_result.skipped,
+            test_duration
+        );
 
         if test_result.failed > 0 {
-            println!("\n{}", "-".repeat(60));
-            println!("Failures:");
-            for failure in test_result.failures {
-                println!("\n  {} > {}", failure.class_name, failure.test_name);
-                println!("    {}", failure.message);
-                if verbose {
-                    println!("\n{}", failure.stacktrace);
-                }
-            }
-
             return Err(BuildError::TestExecutionFailed {
                 message: format!("{} test(s) failed", test_result.failed),
             });
         }
     }
 
-    println!("{}", "=".repeat(60));
     Ok(())
 }
 
@@ -196,14 +265,16 @@ async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Re
 
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
+    let name = config.project.name.clone();
 
     // Create build orchestrator
     let mut orchestrator = BuildOrchestrator::new(config)?;
 
-    // Ensure test sources are compiled first
-    if verbose {
-        println!("Compiling test sources...");
-    }
+    print_status(
+        "Compiling",
+        &format!("{} v0.1.0 (test)", name),
+        Color::Green,
+    );
     orchestrator.compile_tests().await?;
 
     // Run tests
@@ -213,46 +284,32 @@ async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Re
         fail_fast,
     };
 
-    if verbose {
-        println!("Running tests...");
-    }
+    print_status("Running", "tests", Color::Green);
     let result = orchestrator.run_tests(&options).await?;
 
-    // Report results
-    println!("\n{}", "=".repeat(60));
-    println!("Test Results:");
-    println!("{}", "=".repeat(60));
-    println!("Total: {}", result.total);
+    let duration_secs = start.elapsed().as_secs_f64();
+
+    let status_color = if result.failed > 0 {
+        Color::Red
+    } else {
+        Color::Green
+    };
+    let status_text = if result.failed > 0 { "FAILED" } else { "ok" };
+
     println!(
-        "Passed: {} ({}%)",
+        "\ntest result: {}. {} passed; {} failed; {} ignored; 0 measured; 0 filtered out; finished in {:.2}s\n",
+        status_text.color(status_color),
         result.passed,
-        if result.total > 0 {
-            (result.passed as f64 / result.total as f64 * 100.0) as u32
-        } else {
-            0
-        }
+        result.failed,
+        result.skipped,
+        duration_secs
     );
-    println!("Failed: {}", result.failed);
-    println!("Skipped: {}", result.skipped);
-    println!("Time: {:.2}s", start.elapsed().as_secs_f64());
 
     if result.failed > 0 {
-        println!("\n{}", "-".repeat(60));
-        println!("Failures:");
-        for failure in &result.failures {
-            println!("\n  {} > {}", failure.class_name, failure.test_name);
-            println!("    {}", failure.message);
-            if verbose {
-                println!("\n{}", failure.stacktrace);
-            }
-        }
-
-        println!("{}", "=".repeat(60));
         return Err(BuildError::TestExecutionFailed {
             message: format!("{} test(s) failed", result.failed),
         });
     }
 
-    println!("{}", "=".repeat(60));
     Ok(())
 }

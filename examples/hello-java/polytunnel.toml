@@ -3,16 +3,20 @@ name = "hello-java"
 java_version = "17"
 
 [build]
-source_dirs = []
-test_source_dirs = []
-output_dir = ""
-test_output_dir = ""
+source_dirs = ["app/src/main/java"]
+test_source_dirs = ["app/src/test/java"]
+output_dir = "target/classes"
+test_output_dir = "target/test-classes"
 compiler_args = []
 test_compiler_args = []
 test_framework = ""
-cache_dir = ""
+
 
 [dependencies]
+"com.google.guava:guava" = "33.0.0-jre"
+"org.apache.commons:commons-lang3" = "3.14.0"
+"org.junit.jupiter:junit-jupiter" = { version = "5.10.1", scope = "test" }
+"org.junit.platform:junit-platform-console-standalone" = { version = "1.10.1", scope = "test" }
 
 [[repositories]]
 name = "central"

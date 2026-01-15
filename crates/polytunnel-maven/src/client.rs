@@ -115,8 +115,17 @@ impl MavenClient {
     }
 
     /// Download JAR to a path
-    pub async fn download_jar(&self, coord: &Coordinate, dest: &PathBuf) -> Result<()> {
+    pub async fn download_jar(
+        &self,
+        coord: &Coordinate,
+        dest: &PathBuf,
+        verbose: bool,
+    ) -> Result<()> {
         let url = self.jar_url(coord);
+
+        if verbose {
+            println!("   Downloading {}", coord);
+        }
 
         let bytes = self.http.get(&url).send().await?.bytes().await?;
 

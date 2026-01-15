@@ -10,10 +10,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pom {
     pub coordinate: Coordinate,
+    #[serde(default = "default_packaging")]
+    pub packaging: String,
     pub parent: Option<Coordinate>,
     pub dependencies: Vec<PomDependency>,
     pub dependency_management: Vec<PomDependency>,
     pub properties: std::collections::HashMap<String, String>,
+}
+
+fn default_packaging() -> String {
+    "jar".to_string()
 }
 
 /// Dependency entry in POM
@@ -48,22 +54,68 @@ pub struct Exclusion {
 }
 
 /// Parse POM XML content
+fn inject_project_properties(pom: &mut Pom) {
+    if !pom.coordinate.version.is_empty() {
+        pom.properties.insert(
+            "project.version".to_string(),
+            pom.coordinate.version.clone(),
+        );
+        pom.properties
+            .insert("pom.version".to_string(), pom.coordinate.version.clone());
+        pom.properties
+            .insert("version".to_string(), pom.coordinate.version.clone());
+    }
+    if !pom.coordinate.group_id.is_empty() {
+        pom.properties.insert(
+            "project.groupId".to_string(),
+            pom.coordinate.group_id.clone(),
+        );
+        pom.properties
+            .insert("pom.groupId".to_string(), pom.coordinate.group_id.clone());
+        pom.properties
+            .insert("groupId".to_string(), pom.coordinate.group_id.clone());
+    }
+    if !pom.coordinate.artifact_id.is_empty() {
+        pom.properties.insert(
+            "project.artifactId".to_string(),
+            pom.coordinate.artifact_id.clone(),
+        );
+        pom.properties.insert(
+            "pom.artifactId".to_string(),
+            pom.coordinate.artifact_id.clone(),
+        );
+        pom.properties
+            .insert("artifactId".to_string(), pom.coordinate.artifact_id.clone());
+    }
+}
+
 pub fn parse_pom(xml: &str) -> Result<Pom> {
+    // Detect if response is HTML (likely an error page from Maven Central)
+    let trimmed = xml.trim();
+    if trimmed.starts_with("<!DOCTYPE") || trimmed.starts_with("<html") {
+        return Err(MavenError::XmlParse {
+            message: "Received HTML response instead of POM XML (likely 404 or server error from Maven Central)".to_string(),
+        });
+    }
+
     let mut reader = Reader::from_str(xml);
+    // ... existing initialization ...
     reader.config_mut().trim_text(true);
 
     let mut pom = Pom {
         coordinate: Coordinate::new("", "", ""),
+        packaging: "jar".to_string(),
         parent: None,
         dependencies: Vec::new(),
         dependency_management: Vec::new(),
         properties: std::collections::HashMap::new(),
     };
 
+    // ... existing parsing loop ...
+
+    // START OF REPLACEMENT FOR END OF FUNCTION
     let mut current_path: Vec<String> = Vec::new();
     let mut current_text = String::new();
-
-    // Temporary storage for parsing
     let mut group_id = String::new();
     let mut artifact_id = String::new();
     let mut version = String::new();
@@ -74,6 +126,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
     let mut in_parent = false;
     let mut in_properties = false;
     let mut in_dependency_management = false;
+    let mut in_exclusion = false;
     let mut prop_name = String::new();
 
     loop {
@@ -91,6 +144,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         scope = DependencyScope::Compile;
                         optional = false;
                     }
+                    "exclusion" => in_exclusion = true,
                     "parent" => in_parent = true,
                     "properties" => in_properties = true,
                     "dependencyManagement" => in_dependency_management = true,
@@ -126,6 +180,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         }
                         in_dependency = false;
                     }
+                    "exclusion" => in_exclusion = false,
                     "parent" => {
                         pom.parent = Some(Coordinate::new(&group_id, &artifact_id, &version));
                         in_parent = false;
@@ -152,15 +207,24 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
 
                 if let Some(current_elem) = current_path.last() {
                     match current_elem.as_str() {
+                        "packaging" => {
+                            if current_path.len() == 2 {
+                                pom.packaging = current_text.clone();
+                            }
+                        }
                         "groupId" => {
-                            if in_dependency || in_parent {
+                            if in_exclusion {
+                                // Ignore exclusion groupId
+                            } else if in_dependency || in_parent {
                                 group_id = current_text.clone();
                             } else if current_path.len() == 2 {
                                 pom.coordinate.group_id = current_text.clone();
                             }
                         }
                         "artifactId" => {
-                            if in_dependency || in_parent {
+                            if in_exclusion {
+                                // Ignore exclusion artifactId
+                            } else if in_dependency || in_parent {
                                 artifact_id = current_text.clone();
                             } else if current_path.len() == 2 {
                                 pom.coordinate.artifact_id = current_text.clone();
@@ -200,34 +264,152 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
         }
     }
 
+    // Inject implicit project properties
+    inject_project_properties(&mut pom);
+
+    // Apply property substitution to dependencies
+    let properties = &pom.properties;
+    for dep in &mut pom.dependencies {
+        dep.group_id = resolve_value(&dep.group_id, properties);
+        dep.artifact_id = resolve_value(&dep.artifact_id, properties);
+        if let Some(v) = &dep.version {
+            dep.version = Some(resolve_value(v, properties));
+        }
+    }
+
+    for dep in &mut pom.dependency_management {
+        dep.group_id = resolve_value(&dep.group_id, properties);
+        dep.artifact_id = resolve_value(&dep.artifact_id, properties);
+        if let Some(v) = &dep.version {
+            dep.version = Some(resolve_value(v, properties));
+        }
+    }
+
     Ok(pom)
+}
+
+fn resolve_value(value: &str, properties: &std::collections::HashMap<String, String>) -> String {
+    let mut current = value.to_string();
+    // Iteratively resolve to handle nested properties like ${a} -> ${b} -> value
+    for _ in 0..10 {
+        let next = resolve_single_pass(&current, properties);
+        if next == current {
+            return next;
+        }
+        current = next;
+    }
+    current
+}
+
+fn resolve_single_pass(
+    value: &str,
+    properties: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut result = String::new();
+    let mut chars = value.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '$' && chars.peek() == Some(&'{') {
+            chars.next(); // consume '{'
+            let mut key = String::new();
+            let mut closed = false;
+
+            for k_char in &mut chars {
+                if k_char == '}' {
+                    closed = true;
+                    break;
+                }
+                key.push(k_char);
+            }
+
+            if closed {
+                if let Some(val) = properties.get(&key) {
+                    result.push_str(val);
+                } else {
+                    // Property not found, keep original text
+                    result.push_str("${");
+                    result.push_str(&key);
+                    result.push('}');
+                }
+            } else {
+                // Unclosed variable, just push what we have
+                result.push_str("${");
+                result.push_str(&key);
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 impl Pom {
     /// Resolve property placeholders like ${project.version}
     pub fn resolve_property(&self, value: &str) -> String {
-        let mut result = value.to_string();
+        resolve_value(value, &self.properties)
+    }
 
-        // Replace ${...} patterns
-        while let Some(start) = result.find("${") {
-            if let Some(end) = result[start..].find('}') {
-                let key = &result[start + 2..start + end];
-                let replacement = self
-                    .properties
-                    .get(key)
-                    .cloned()
-                    .unwrap_or_else(|| format!("${{{}}}", key));
-                result = format!(
-                    "{}{}{}",
-                    &result[..start],
-                    replacement,
-                    &result[start + end + 1..]
-                );
-            } else {
-                break;
+    /// Merge properties from another source (e.g., parent POM) and re-resolve dependencies
+    pub fn merge_properties(&mut self, extra_props: &std::collections::HashMap<String, String>) {
+        // 1. Add extra properties if not present (child overrides parent)
+        for (k, v) in extra_props {
+            self.properties.entry(k.clone()).or_insert(v.clone());
+        }
+
+        // 2. Re-resolve properties in dependencies
+        let props = &self.properties;
+
+        for dep in &mut self.dependencies {
+            // Resolve groupId and artifactId if they contain variables
+            if dep.group_id.contains("${") {
+                dep.group_id = resolve_value(&dep.group_id, props);
+            }
+            if dep.artifact_id.contains("${") {
+                dep.artifact_id = resolve_value(&dep.artifact_id, props);
+            }
+            if let Some(v) = &dep.version {
+                // Only try to resolve if it still looks like a variable
+                if v.contains("${") {
+                    dep.version = Some(resolve_value(v, props));
+                }
             }
         }
 
-        result
+        for dep in &mut self.dependency_management {
+            // Resolve groupId and artifactId if they contain variables
+            if dep.group_id.contains("${") {
+                dep.group_id = resolve_value(&dep.group_id, props);
+            }
+            if dep.artifact_id.contains("${") {
+                dep.artifact_id = resolve_value(&dep.artifact_id, props);
+            }
+            if let Some(v) = &dep.version
+                && v.contains("${")
+            {
+                dep.version = Some(resolve_value(v, props));
+            }
+        }
+    }
+
+    pub fn merge_dependency_management(&mut self, parent_dm: Vec<PomDependency>) {
+        self.dependency_management.extend(parent_dm);
+    }
+
+    pub fn fill_missing_versions(&mut self) {
+        for dep in &mut self.dependencies {
+            if dep.version.is_none() {
+                // Find in dependency_management
+                for dm in &self.dependency_management {
+                    if dm.group_id == dep.group_id
+                        && dm.artifact_id == dep.artifact_id
+                        && let Some(v) = &dm.version
+                    {
+                        dep.version = Some(v.clone());
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

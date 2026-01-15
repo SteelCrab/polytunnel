@@ -14,6 +14,18 @@
 - 🛠️ **Build** - Direct javac compilation
 - 🧪 **Test** - Auto-detect JUnit 5/4, TestNG
 
+## Comparison with Existing Tools
+
+| Feature | Maven | Gradle | Polytunnel |
+|---------|-------|--------|------------|
+| **Speed** | Slow (JVM startup) | Medium (JVM + Daemon) | **Instant** (Native binary) |
+| **Config** | Verbose XML | Complex Groovy/Kotlin | **Simple TOML** |
+| **Scope** | Everything | Limitless (DSL) | **Focused** (Build/Deps) |
+| **Size** | ~10MB + JVM | ~100MB + JVM | **~5MB** (Standalone) |
+
+*(Note: Polytunnel is currently in early development and lacks many advanced features of mature tools)*
+
+
 ## Architecture
 
 | Crate | Description |

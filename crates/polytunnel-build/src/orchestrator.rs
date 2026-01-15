@@ -120,9 +120,7 @@ impl BuildOrchestrator {
         if options.verbose {
             println!("Resolving dependencies...");
         }
-        self.classpath_builder
-            .build_classpath(&self.config.build.cache_dir)
-            .await?;
+        self.resolve_dependencies(options.verbose).await?;
 
         // 2. Clean if requested
         if options.clean {
@@ -167,8 +165,16 @@ impl BuildOrchestrator {
         })
     }
 
+    /// Resolve dependencies
+    pub async fn resolve_dependencies(&mut self, verbose: bool) -> Result<()> {
+        self.classpath_builder
+            .build_classpath(&self.config.build.cache_dir, verbose)
+            .await
+            .map(|_| ())
+    }
+
     /// Compile main sources only
-    async fn compile_sources(&mut self) -> Result<usize> {
+    pub async fn compile_sources(&mut self) -> Result<usize> {
         let source_dirs = &self.config.build.source_dirs;
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let compiler_args = self.config.build.compiler_args.clone();
@@ -201,12 +207,17 @@ impl BuildOrchestrator {
     /// Compile test sources only
     pub async fn compile_tests(&mut self) -> Result<()> {
         let test_source_dirs = &self.config.build.test_source_dirs;
+        // ... (rest is unchanged logic, just ensuring pub)
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
         let test_compiler_args = self.config.build.test_compiler_args.clone();
 
         // Get test classpath
         let classpaths = self.classpath_builder.get_cached_classpath();
-        let test_classpath = &classpaths.test_classpath;
+        let mut test_classpath = classpaths.test_classpath.clone();
+
+        // Add main output dir to classpath so tests can see main classes
+        let output_dir = PathBuf::from(&self.config.build.output_dir);
+        test_classpath.push(output_dir);
 
         // Find all test Java source files
         let test_files = self.find_java_files(test_source_dirs)?;
@@ -230,20 +241,48 @@ impl BuildOrchestrator {
     }
 
     /// Run tests
-    pub async fn run_tests(&mut self, _options: &TestOptions) -> Result<TestResult> {
-        // For now, return a placeholder result
-        // Full implementation in test_runner.rs
-        Ok(TestResult {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            failures: vec![],
-        })
+    pub async fn run_tests(&mut self, options: &TestOptions) -> Result<TestResult> {
+        let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
+
+        // Construct full classpath for tests (compile + test + test_output + output)
+        let classpaths = self.classpath_builder.get_cached_classpath();
+        let mut full_classpath = classpaths.test_classpath.clone();
+
+        // Add main classes and test classes to classpath
+        full_classpath.push(PathBuf::from(&self.config.build.output_dir));
+        full_classpath.push(test_output_dir.clone());
+
+        // Detect framework
+        let framework =
+            if let Some(fw) = crate::test_runner::TestRunner::detect_framework(&full_classpath) {
+                fw
+            } else {
+                if options.verbose {
+                    println!("No supported test framework detected.");
+                }
+                return Ok(TestResult {
+                    total: 0,
+                    passed: 0,
+                    failed: 0,
+                    skipped: 0,
+                    failures: vec![],
+                });
+            };
+
+        if options.verbose {
+            println!("Detected test framework: {}", framework.name());
+        }
+
+        let runner =
+            crate::test_runner::TestRunner::new(framework, full_classpath, test_output_dir);
+
+        runner
+            .run(options.pattern.clone(), options.verbose, options.fail_fast)
+            .await
     }
 
     /// Clean build artifacts
-    fn clean(&self) -> Result<()> {
+    pub fn clean(&self) -> Result<()> {
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
 
