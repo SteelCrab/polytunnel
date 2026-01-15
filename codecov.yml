@@ -1,0 +1,23 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 30
+        threshold: 1
+        base: auto
+    patch:
+      default:
+        target: 30
+        threshold: 1
+    changes:
+      default:
+        target: 30
+        threshold: 1
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
