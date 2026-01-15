@@ -196,25 +196,25 @@ impl ClasspathBuilder {
         for (key, dep) in &self.config.dependencies {
             if let Ok(root_coord) = Self::parse_coordinate(key)
                 && root_coord.group_id == coord.group_id
-                    && root_coord.artifact_id == coord.artifact_id
-                {
-                    // Map ProjectConfig scope (polytunnel_core::DependencyScope) to Maven scope
-                    let core_scope = dep.scope();
-                    return Some(match core_scope {
-                        polytunnel_core::DependencyScope::Compile => {
-                            polytunnel_maven::DependencyScope::Compile
-                        }
-                        polytunnel_core::DependencyScope::Test => {
-                            polytunnel_maven::DependencyScope::Test
-                        }
-                        polytunnel_core::DependencyScope::Runtime => {
-                            polytunnel_maven::DependencyScope::Runtime
-                        }
-                        polytunnel_core::DependencyScope::Provided => {
-                            polytunnel_maven::DependencyScope::Provided
-                        }
-                    });
-                }
+                && root_coord.artifact_id == coord.artifact_id
+            {
+                // Map ProjectConfig scope (polytunnel_core::DependencyScope) to Maven scope
+                let core_scope = dep.scope();
+                return Some(match core_scope {
+                    polytunnel_core::DependencyScope::Compile => {
+                        polytunnel_maven::DependencyScope::Compile
+                    }
+                    polytunnel_core::DependencyScope::Test => {
+                        polytunnel_maven::DependencyScope::Test
+                    }
+                    polytunnel_core::DependencyScope::Runtime => {
+                        polytunnel_maven::DependencyScope::Runtime
+                    }
+                    polytunnel_core::DependencyScope::Provided => {
+                        polytunnel_maven::DependencyScope::Provided
+                    }
+                });
+            }
         }
         None
     }
