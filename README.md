@@ -121,6 +121,41 @@ project-root/
     └── build-cache.json
 ```
 
+## Continuous Integration
+
+Polytunnel uses GitHub Actions for automated testing and building across multiple platforms and architectures.
+
+### CI Jobs
+
+| Job | Purpose | Platform(s) | Status |
+|-----|---------|-------------|--------|
+| **Build** | Debug build verification | Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64) | ✅ |
+| **Test** | Unit and documentation tests | Linux (x86_64) | ✅ |
+| **Lint** | Clippy static analysis with strict warnings | Linux (x86_64) | ✅ |
+| **Format** | Code formatting check (rustfmt) | Linux (x86_64) | ✅ |
+| **Release Build** | Optimized release binaries | Linux (x86_64), macOS (aarch64), Windows (x86_64) | ✅ |
+| **Security Audit** | Dependency vulnerability scanning | Linux (x86_64) | ✅ |
+
+### Supported Platforms for Building
+
+| Platform | Arch | Build | Release |
+|----------|------|-------|---------|
+| Linux | x86_64 | ✅ | ✅ |
+| Linux | aarch64 | ✅ | ⏳ |
+| macOS | x86_64 | ✅ | ⏳ |
+| macOS | aarch64 (Apple Silicon) | ✅ | ✅ |
+| Windows | x86_64 | ✅ | ✅ |
+
+### Triggers
+
+CI runs automatically on:
+- All branches (push)
+- All pull requests
+
+### View Workflows
+
+Check the latest CI runs at: [GitHub Actions](../../actions)
+
 ## Development
 
 ```bash
