@@ -17,6 +17,9 @@ test_framework = "junit5"
 "org.slf4j:slf4j-simple" = "2.0.12"
 "com.fasterxml.jackson.core:jackson-databind" = "2.16.1"
 
+# Kotlin Runtime (Javalin is written in Kotlin but doesn't declare it as dependency)
+"org.jetbrains.kotlin:kotlin-stdlib" = "1.9.22"
+
 # Test Dependencies
 [dependencies."org.junit.jupiter:junit-jupiter"]
 version = "5.10.1"
