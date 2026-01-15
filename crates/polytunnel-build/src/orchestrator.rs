@@ -167,8 +167,16 @@ impl BuildOrchestrator {
         })
     }
 
+    /// Resolve dependencies
+    pub async fn resolve_dependencies(&mut self) -> Result<()> {
+        self.classpath_builder
+            .build_classpath(&self.config.build.cache_dir)
+            .await
+            .map(|_| ())
+    }
+
     /// Compile main sources only
-    async fn compile_sources(&mut self) -> Result<usize> {
+    pub async fn compile_sources(&mut self) -> Result<usize> {
         let source_dirs = &self.config.build.source_dirs;
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let compiler_args = self.config.build.compiler_args.clone();
@@ -201,6 +209,7 @@ impl BuildOrchestrator {
     /// Compile test sources only
     pub async fn compile_tests(&mut self) -> Result<()> {
         let test_source_dirs = &self.config.build.test_source_dirs;
+        // ... (rest is unchanged logic, just ensuring pub)
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
         let test_compiler_args = self.config.build.test_compiler_args.clone();
 
@@ -275,7 +284,7 @@ impl BuildOrchestrator {
     }
 
     /// Clean build artifacts
-    fn clean(&self) -> Result<()> {
+    pub fn clean(&self) -> Result<()> {
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
 

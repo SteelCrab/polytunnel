@@ -214,19 +214,23 @@ impl TestRunner {
             args.push(class.clone());
         }
 
-        if verbose {
-            println!("Executing JUnit 5 with args: {:?}", args);
-        }
-
+// Output is captured and can be printed by caller if needed, 
+        // or just rely on the test process stdout for tree structure visualization.
+        
         let output = std::process::Command::new("java")
             .args(&args)
             .output()
             .map_err(crate::error::BuildError::Io)?;
 
+        // Only print raw output if it's the tree structure we want
         if verbose {
-            println!("Test Output:\n{}", String::from_utf8_lossy(&output.stdout));
+            // Check if output has content before printing to avoid empty lines
+            if !output.stdout.is_empty() {
+                 println!("{}", String::from_utf8_lossy(&output.stdout).trim_end());
+            }
             if !output.stderr.is_empty() {
-                println!("Test Error Output:\n{}", String::from_utf8_lossy(&output.stderr));
+                // Stdout usually contains the tree, stderr has warnings/errors
+                println!("{}", String::from_utf8_lossy(&output.stderr).trim_end());
             }
         }
         
