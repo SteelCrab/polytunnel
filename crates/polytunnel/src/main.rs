@@ -205,6 +205,12 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
 
         // Let's hide "Compiling test sources" message unless verbose?
         // Or just do it.
+        // Explicitly show test compilation step
+        print_status(
+            "Compiling",
+            &format!("{} v{} (test)", name, version),
+            Color::Green,
+        );
         orchestrator.compile_tests().await?;
 
         println!(
@@ -220,7 +226,9 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
             fail_fast: false,
         };
 
+        let test_start = Instant::now();
         let test_result = orchestrator.run_tests(&test_opts).await?;
+        let test_duration = test_start.elapsed().as_secs_f64();
 
         let status_color = if test_result.failed > 0 {
             Color::Red
@@ -239,7 +247,7 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
             test_result.passed,
             test_result.failed,
             test_result.skipped,
-            duration_secs // Approximation
+            test_duration
         );
 
         if test_result.failed > 0 {
