@@ -52,6 +52,7 @@ impl ClasspathBuilder {
     /// # Arguments
     ///
     /// * `cache_dir` - Directory to cache downloaded JARs
+    /// * `verbose` - Whether to print download progress
     ///
     /// # Returns
     ///
@@ -63,7 +64,11 @@ impl ClasspathBuilder {
     /// * `BuildError::Io` - If JAR download fails
     /// * `BuildError::Maven` - If Maven resolution fails
     /// * `BuildError::Resolver` - If dependency resolution fails
-    pub async fn build_classpath(&mut self, cache_dir: &str) -> Result<ClasspathResult> {
+    pub async fn build_classpath(
+        &mut self,
+        cache_dir: &str,
+        verbose: bool,
+    ) -> Result<ClasspathResult> {
         let cache_path = PathBuf::from(cache_dir);
         if !cache_path.exists() {
             std::fs::create_dir_all(&cache_path)?;
@@ -103,7 +108,7 @@ impl ClasspathBuilder {
 
                 // Download
                 client
-                    .download_jar(coord, &artifact_path)
+                    .download_jar(coord, &artifact_path, verbose)
                     .await
                     .map_err(BuildError::from)?;
             }
@@ -256,6 +261,17 @@ impl ClasspathBuilder {
             parts[1],
             if parts.len() > 2 { parts[2] } else { "LATEST" },
         ))
+    }
+
+    /// Format classpath for command line (helper for tests)
+    #[allow(dead_code)]
+    fn format_classpath(paths: &[PathBuf]) -> String {
+        let separator = if cfg!(windows) { ";" } else { ":" };
+        paths
+            .iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect::<Vec<_>>()
+            .join(separator)
     }
 }
 
