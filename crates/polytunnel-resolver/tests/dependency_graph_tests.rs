@@ -199,9 +199,9 @@ fn test_dependency_graph_version_conflicts() {
 fn test_dependency_graph_version_conflict_resolution() {
     use semver::Version;
     let versions = ["1.0.0", "1.1.0", "1.2.0"];
-    let resolved_version = versions.iter().map(|v| Version::parse(v).unwrap()).max();
+    let resolved_version = versions.iter().filter_map(|v| Version::parse(v).ok()).max();
 
-    assert_eq!(resolved_version.unwrap().to_string(), "1.2.0");
+    assert_eq!(resolved_version, Some(Version::parse("1.2.0").unwrap()));
 }
 
 #[test]
