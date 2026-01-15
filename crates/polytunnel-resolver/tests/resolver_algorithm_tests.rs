@@ -72,12 +72,15 @@ fn test_resolver_version_range_parsing() {
 
 #[test]
 fn test_resolver_version_range_evaluation() {
-    let available_versions = ["1.0.0", "1.5.0", "1.9.9", "2.0.0", "2.1.0"];
+    use semver::{Version, VersionReq};
 
-    // For range [1.0.0, 2.0.0)
+    let available_versions = ["1.0.0", "1.5.0", "1.9.9", "2.0.0", "2.1.0"];
+    let req = VersionReq::parse(">=1.0.0, <2.0.0").unwrap();
+
     let selected: Vec<_> = available_versions
         .iter()
-        .filter(|v| **v >= "1.0.0" && **v < "2.0.0")
+        .filter_map(|v| Version::parse(v).ok())
+        .filter(|v| req.matches(v))
         .collect();
 
     assert_eq!(selected.len(), 3);
