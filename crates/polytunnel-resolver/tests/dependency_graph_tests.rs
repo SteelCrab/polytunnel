@@ -2,7 +2,7 @@
 //!
 //! Coverage: Ensures the integrity of graph operations, node management, and dependency link tracking.
 
-use polytunnel_core::{Dependency, DependencyScope};
+use polytunnel_core::DependencyScope;
 use std::collections::HashMap;
 
 #[test]
@@ -78,7 +78,7 @@ fn test_dependency_graph_with_scopes() {
 
 #[test]
 fn test_dependency_graph_duplicate_detection() {
-    let deps = vec![
+    let deps = [
         "junit".to_string(),
         "springframework".to_string(),
         "junit".to_string(),
@@ -86,9 +86,9 @@ fn test_dependency_graph_duplicate_detection() {
 
     let unique_deps: Vec<String> = deps
         .iter()
-        .cloned()
         .collect::<std::collections::HashSet<_>>()
         .into_iter()
+        .cloned()
         .collect();
     assert_eq!(unique_deps.len(), 2);
 }
@@ -100,12 +100,12 @@ fn test_dependency_graph_cycle_detection_simple() {
     graph.insert("a".to_string(), vec!["b".to_string()]);
     graph.insert("b".to_string(), vec!["a".to_string()]);
 
-    let has_cycle = graph.get("a").and_then(|deps| {
-        Some(deps.iter().any(|dep| {
+    let has_cycle = graph.get("a").map(|deps| {
+        deps.iter().any(|dep| {
             graph
                 .get(dep)
-                .map_or(false, |subdeps| subdeps.contains(&"a".to_string()))
-        }))
+                .is_some_and(|subdeps| subdeps.contains(&"a".to_string()))
+        })
     });
 
     assert_eq!(has_cycle, Some(true));
@@ -119,9 +119,7 @@ fn test_dependency_graph_cycle_detection_no_cycle() {
     graph.insert("c".to_string(), vec![]);
 
     // Check if there's a back edge from c to a
-    let has_cycle = graph
-        .get("c")
-        .and_then(|deps| Some(deps.contains(&"a".to_string())));
+    let has_cycle = graph.get("c").map(|deps| deps.contains(&"a".to_string()));
 
     assert_eq!(has_cycle, Some(false));
 }
@@ -182,6 +180,7 @@ fn test_dependency_graph_width_calculation() {
 #[test]
 fn test_dependency_graph_version_conflicts() {
     #[derive(Clone)]
+    #[allow(dead_code)]
     struct VersionedDependency {
         name: String,
         version: String,
@@ -198,7 +197,7 @@ fn test_dependency_graph_version_conflicts() {
 
 #[test]
 fn test_dependency_graph_version_conflict_resolution() {
-    let versions = vec!["1.0.0", "1.1.0", "1.2.0"];
+    let versions = ["1.0.0", "1.1.0", "1.2.0"];
     let resolved_version = versions.iter().max();
 
     assert_eq!(resolved_version, Some(&"1.2.0"));
@@ -206,20 +205,17 @@ fn test_dependency_graph_version_conflict_resolution() {
 
 #[test]
 fn test_dependency_graph_scope_filtering() {
-    let mut scoped_deps: HashMap<String, HashMap<DependencyScope, Vec<String>>> = HashMap::new();
+    let mut scoped_deps: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     let mut compile_deps = HashMap::new();
-    compile_deps.insert(
-        DependencyScope::Compile,
-        vec!["springframework".to_string()],
-    );
-    compile_deps.insert(DependencyScope::Test, vec!["junit".to_string()]);
+    compile_deps.insert("compile".to_string(), vec!["springframework".to_string()]);
+    compile_deps.insert("test".to_string(), vec!["junit".to_string()]);
 
     scoped_deps.insert("app".to_string(), compile_deps);
 
     let compile_only = scoped_deps
         .get("app")
-        .and_then(|m| m.get(&DependencyScope::Compile))
+        .and_then(|m| m.get("compile"))
         .unwrap();
 
     assert_eq!(compile_only.len(), 1);
@@ -227,10 +223,11 @@ fn test_dependency_graph_scope_filtering() {
 
 #[test]
 fn test_dependency_graph_scope_merging() {
-    let mut all_deps = vec![];
-    all_deps.push(("springframework".to_string(), DependencyScope::Compile));
-    all_deps.push(("junit".to_string(), DependencyScope::Test));
-    all_deps.push(("mockito".to_string(), DependencyScope::Test));
+    let all_deps = [
+        ("springframework".to_string(), DependencyScope::Compile),
+        ("junit".to_string(), DependencyScope::Test),
+        ("mockito".to_string(), DependencyScope::Test),
+    ];
 
     assert_eq!(all_deps.len(), 3);
 }
@@ -238,12 +235,13 @@ fn test_dependency_graph_scope_merging() {
 #[test]
 fn test_dependency_graph_optional_dependencies() {
     #[derive(Clone)]
+    #[allow(dead_code)]
     struct OptionalDependency {
         name: String,
         optional: bool,
     }
 
-    let deps = vec![
+    let deps = [
         OptionalDependency {
             name: "lib1".to_string(),
             optional: false,
@@ -293,12 +291,13 @@ fn test_dependency_graph_bom_import() {
 #[test]
 fn test_dependency_graph_bom_version_management() {
     #[derive(Clone)]
+    #[allow(dead_code)]
     struct BomVersion {
         artifact: String,
         version: String,
     }
 
-    let managed_versions = vec![
+    let managed_versions = [
         BomVersion {
             artifact: "spring-core".to_string(),
             version: "6.0.0".to_string(),
@@ -328,12 +327,13 @@ fn test_dependency_graph_repository_variants() {
 #[test]
 fn test_dependency_graph_package_classifier_handling() {
     #[derive(Clone)]
+    #[allow(dead_code)]
     struct ClassifiedArtifact {
         name: String,
         classifier: Option<String>,
     }
 
-    let artifacts = vec![
+    let artifacts = [
         ClassifiedArtifact {
             name: "junit".to_string(),
             classifier: None,
@@ -353,7 +353,7 @@ fn test_dependency_graph_package_classifier_handling() {
 
 #[test]
 fn test_dependency_graph_snapshot_handling() {
-    let deps = vec![
+    let deps = [
         ("lib1".to_string(), "1.0.0-SNAPSHOT".to_string()),
         ("lib2".to_string(), "1.0.0".to_string()),
     ];
@@ -367,7 +367,7 @@ fn test_dependency_graph_snapshot_handling() {
 
 #[test]
 fn test_dependency_graph_release_vs_snapshot() {
-    let versions = vec!["1.0.0", "1.0.0-SNAPSHOT", "1.0.0-RC1", "1.0.0-beta"];
+    let versions = ["1.0.0", "1.0.0-SNAPSHOT", "1.0.0-RC1", "1.0.0-beta"];
 
     let releases: Vec<_> = versions.iter().filter(|v| !v.contains("-")).collect();
     let pre_releases: Vec<_> = versions.iter().filter(|v| v.contains("-")).collect();
@@ -378,7 +378,7 @@ fn test_dependency_graph_release_vs_snapshot() {
 
 #[test]
 fn test_dependency_graph_repository_priority() {
-    let mut repos_with_priority = vec![
+    let mut repos_with_priority = [
         ("central".to_string(), 1),
         ("custom".to_string(), 2),
         ("snapshots".to_string(), 3),
@@ -404,7 +404,7 @@ fn test_dependency_graph_transitive_scope_propagation() {
 
 #[test]
 fn test_dependency_graph_minimal_version_range() {
-    let versions = vec!["1.0.0", "1.1.0", "1.2.0", "2.0.0"];
+    let versions = ["1.0.0", "1.1.0", "1.2.0", "2.0.0"];
 
     let in_range: Vec<_> = versions.iter().filter(|v| v.starts_with("1.")).collect();
 

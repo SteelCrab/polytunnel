@@ -2,8 +2,7 @@
 //!
 //! Coverage: Verifies core resolver logic, including version range evaluation, conflict resolution, and transitive dependency collection.
 
-use polytunnel_core::{Dependency, DependencyScope};
-use polytunnel_maven::Coordinate;
+use polytunnel_core::DependencyScope;
 use std::collections::HashMap;
 
 #[test]
@@ -16,7 +15,7 @@ fn test_resolver_initialization() {
 
 #[test]
 fn test_resolver_single_dependency() {
-    let deps = vec![("junit".to_string(), "4.13.2".to_string())];
+    let deps = [("junit".to_string(), "4.13.2".to_string())];
 
     assert_eq!(deps.len(), 1);
     assert_eq!(deps[0].0, "junit");
@@ -24,7 +23,7 @@ fn test_resolver_single_dependency() {
 
 #[test]
 fn test_resolver_multiple_dependencies() {
-    let deps = vec![
+    let deps = [
         ("junit".to_string(), "4.13.2".to_string()),
         ("springframework".to_string(), "6.0.0".to_string()),
         ("guava".to_string(), "32.0.0-jre".to_string()),
@@ -44,10 +43,10 @@ fn test_resolver_transitive_dependency_collection() {
     );
 
     // Direct deps
-    let direct = vec![("junit".to_string(), "4.13.2".to_string())];
+    let direct = [("junit".to_string(), "4.13.2".to_string())];
 
     // Transitive deps collection
-    let mut all_deps = direct.clone();
+    let mut all_deps = direct.to_vec();
     for (dep, _version) in &direct {
         if let Some(transitive) = graph.get(dep) {
             all_deps.extend(transitive.clone());
@@ -59,7 +58,7 @@ fn test_resolver_transitive_dependency_collection() {
 
 #[test]
 fn test_resolver_version_range_parsing() {
-    let version_ranges = vec![
+    let version_ranges = [
         "[1.0.0]",       // exact
         "[1.0.0,2.0.0]", // range
         "[1.0.0,2.0.0)", // range exclusive
@@ -73,7 +72,7 @@ fn test_resolver_version_range_parsing() {
 
 #[test]
 fn test_resolver_version_range_evaluation() {
-    let available_versions = vec!["1.0.0", "1.5.0", "1.9.9", "2.0.0", "2.1.0"];
+    let available_versions = ["1.0.0", "1.5.0", "1.9.9", "2.0.0", "2.1.0"];
 
     // For range [1.0.0, 2.0.0)
     let selected: Vec<_> = available_versions
@@ -86,7 +85,7 @@ fn test_resolver_version_range_evaluation() {
 
 #[test]
 fn test_resolver_newest_version_selection() {
-    let versions = vec!["1.0.0", "1.1.0", "1.2.0", "1.1.5"];
+    let versions = ["1.0.0", "1.1.0", "1.2.0", "1.1.5"];
 
     let newest = versions.iter().max();
     assert_eq!(newest, Some(&"1.2.0"));
@@ -94,8 +93,8 @@ fn test_resolver_newest_version_selection() {
 
 #[test]
 fn test_resolver_compatible_version_selection() {
-    let available = vec!["1.0.0", "1.1.0", "1.2.0", "2.0.0"];
-    let constraint = "1.x.x";
+    let available = ["1.0.0", "1.1.0", "1.2.0", "2.0.0"];
+    let _constraint = "1.x.x";
 
     let compatible: Vec<_> = available.iter().filter(|v| v.starts_with("1.")).collect();
 
@@ -104,7 +103,7 @@ fn test_resolver_compatible_version_selection() {
 
 #[test]
 fn test_resolver_conflict_detection() {
-    let deps = vec![
+    let deps = [
         ("junit".to_string(), "4.13.2".to_string()),
         ("junit".to_string(), "4.12".to_string()),
     ];
@@ -114,10 +113,8 @@ fn test_resolver_conflict_detection() {
         let mut seen: HashMap<String, String> = HashMap::new();
         let mut has_conflict = false;
         for (name, version) in &deps {
-            if let Some(existing) = seen.get(name) {
-                if existing != version {
-                    has_conflict = true;
-                }
+            if seen.get(name).is_some_and(|existing| existing != version) {
+                has_conflict = true;
             }
             seen.insert(name.clone(), version.clone());
         }
@@ -129,7 +126,7 @@ fn test_resolver_conflict_detection() {
 
 #[test]
 fn test_resolver_conflict_resolution_newest() {
-    let versions = vec!["4.12", "4.13.2"];
+    let versions = ["4.12", "4.13.2"];
     let winner = versions.iter().max().unwrap();
 
     assert_eq!(*winner, "4.13.2");
@@ -142,13 +139,14 @@ fn test_resolver_conflict_resolution_nearest() {
     // Depth 2: app -> lib2 -> lib3 -> conflicts here
     // Depth 1 wins (nearest)
 
+    #[allow(dead_code)]
     struct DepPath {
         artifact: String,
         depth: usize,
         version: String,
     }
 
-    let conflicts = vec![
+    let conflicts = [
         DepPath {
             artifact: "common".to_string(),
             depth: 1,
@@ -167,8 +165,7 @@ fn test_resolver_conflict_resolution_nearest() {
 
 #[test]
 fn test_resolver_dependency_ordering() {
-    let deps = vec!["springframework", "junit", "mockito", "hamcrest"];
-    let mut sorted_deps = deps.clone();
+    let mut sorted_deps = ["springframework", "junit", "mockito", "hamcrest"];
     sorted_deps.sort();
 
     assert_eq!(sorted_deps[0], "hamcrest");
@@ -177,13 +174,14 @@ fn test_resolver_dependency_ordering() {
 
 #[test]
 fn test_resolver_optional_dependency_exclusion() {
+    #[allow(dead_code)]
     #[derive(Clone)]
     struct DepMetadata {
         name: String,
         optional: bool,
     }
 
-    let deps = vec![
+    let deps = [
         DepMetadata {
             name: "lib1".to_string(),
             optional: false,
@@ -252,7 +250,7 @@ fn test_resolver_provided_scope_non_transitive() {
 
 #[test]
 fn test_resolver_classpath_construction_compile() {
-    let compile_deps = vec![
+    let compile_deps = [
         "springframework-core-6.0.0.jar",
         "springframework-web-6.0.0.jar",
     ];
@@ -264,10 +262,10 @@ fn test_resolver_classpath_construction_compile() {
 
 #[test]
 fn test_resolver_classpath_construction_test() {
-    let compile_deps = vec!["springframework-core-6.0.0.jar"];
-    let test_deps = vec!["junit-4.13.2.jar", "mockito-core-5.2.0.jar"];
+    let compile_deps = ["springframework-core-6.0.0.jar"];
+    let test_deps = ["junit-4.13.2.jar", "mockito-core-5.2.0.jar"];
 
-    let mut all = compile_deps.clone();
+    let mut all = compile_deps.to_vec();
     all.extend(test_deps);
 
     let classpath = all.join(":");
@@ -283,7 +281,7 @@ fn test_resolver_duplicate_detection_same_coordinate() {
         version: String,
     }
 
-    let deps = vec![
+    let deps = [
         Coord {
             group: "org.junit".to_string(),
             artifact: "junit".to_string(),
@@ -403,7 +401,6 @@ fn test_resolver_circular_dependency_handling() {
     graph.insert("c".to_string(), vec!["a".to_string()]);
 
     let mut visited = std::collections::HashSet::new();
-    let mut circular = false;
 
     fn has_cycle(
         node: &str,
@@ -426,7 +423,7 @@ fn test_resolver_circular_dependency_handling() {
         false
     }
 
-    circular = has_cycle("a", &graph, &mut visited);
+    let circular = has_cycle("a", &graph, &mut visited);
     assert!(circular);
 }
 
@@ -447,7 +444,7 @@ fn test_resolver_snapshot_version_handling() {
 
 #[test]
 fn test_resolver_release_version_preference() {
-    let versions = vec!["1.0.0-SNAPSHOT", "1.0.0", "1.0.0-RC1"];
+    let versions = ["1.0.0-SNAPSHOT", "1.0.0", "1.0.0-RC1"];
 
     let releases: Vec<_> = versions.iter().filter(|v| !v.contains("-")).collect();
     let preferred = releases[0];
@@ -457,7 +454,7 @@ fn test_resolver_release_version_preference() {
 
 #[test]
 fn test_resolver_repository_lookup_order() {
-    let repos = vec![("central".to_string(), 1), ("custom".to_string(), 2)];
+    let repos = [("central".to_string(), 1), ("custom".to_string(), 2)];
 
     // Should try central first (lower priority number = higher priority)
     assert_eq!(repos[0].0, "central");
@@ -512,9 +509,9 @@ fn test_resolver_cache_invalidation_on_version_change() {
 
 #[test]
 fn test_resolver_global_exclusion() {
-    let global_exclusions = vec!["commons-logging"];
+    let global_exclusions = ["commons-logging"];
 
-    let deps = vec!["commons-logging", "log4j", "slf4j"];
+    let deps = ["commons-logging", "log4j", "slf4j"];
 
     let filtered: Vec<_> = deps
         .iter()
@@ -548,7 +545,7 @@ fn test_resolver_scope_graph_compilation() {
 
 #[test]
 fn test_resolver_final_classpath_generation() {
-    let jars = vec!["lib1.jar", "lib2.jar", "lib3.jar"];
+    let jars = ["lib1.jar", "lib2.jar", "lib3.jar"];
 
     let classpath = jars.join(":");
     assert_eq!(classpath.matches("jar").count(), 3);
@@ -560,8 +557,8 @@ fn test_resolver_classpath_separator_platform() {
     let sep_unix = ":";
     let sep_windows = ";";
 
-    let classpath_unix = vec!["lib1.jar", "lib2.jar"].join(sep_unix);
-    let classpath_windows = vec!["lib1.jar", "lib2.jar"].join(sep_windows);
+    let classpath_unix = ["lib1.jar", "lib2.jar"].join(sep_unix);
+    let classpath_windows = ["lib1.jar", "lib2.jar"].join(sep_windows);
 
     assert!(classpath_unix.contains(":"));
     assert!(classpath_windows.contains(";"));
