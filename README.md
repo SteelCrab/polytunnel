@@ -1,6 +1,8 @@
 # Polytunnel
 
 [![한국어](https://img.shields.io/badge/lang-한국어-blue.svg)](README_KR.md)
+[![CI](https://github.com/pista/polytunnel/workflows/CI/badge.svg)](../../actions)
+[![codecov](https://codecov.io/gh/pista/polytunnel/graph/badge.svg)](https://codecov.io/gh/pista/polytunnel)
 
 > Fast Java dependency manager written in Rust (uv/ruff style)
 
@@ -134,6 +136,7 @@ Polytunnel uses GitHub Actions for automated testing and building across multipl
 | **Lint** | Clippy static analysis with strict warnings | Linux (x86_64) | ✅ |
 | **Format** | Code formatting check (rustfmt) | Linux (x86_64) | ✅ |
 | **Release Build** | Optimized release binaries | Linux (x86_64), macOS (aarch64), Windows (x86_64) | ✅ |
+| **Coverage** | Code coverage with Tarpaulin (uploaded to Codecov) | Linux (x86_64) | ✅ |
 | **Security Audit** | Dependency vulnerability scanning | Linux (x86_64) | ✅ |
 
 ### Supported Platforms for Building
@@ -155,6 +158,23 @@ CI runs automatically on:
 ### View Workflows
 
 Check the latest CI runs at: [GitHub Actions](../../actions)
+
+### Code Coverage
+
+Coverage reports are automatically uploaded to [Codecov](https://codecov.io/gh/pista/polytunnel):
+
+- **Measured with**: [Tarpaulin](https://github.com/xd009642/tarpaulin)
+- **Excludes**: Test files (`tests/`)
+- **Timeout**: 300 seconds
+- **Uploaded on**: Every push and PR
+
+To generate coverage locally:
+
+```bash
+cargo install cargo-tarpaulin
+cargo tarpaulin --workspace --out Html
+open tarpaulin-report.html
+```
 
 ## Development
 
