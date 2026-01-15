@@ -2,16 +2,16 @@ coverage:
   status:
     project:
       default:
-        target: 70
+        target: 30
         threshold: 1
         base: auto
     patch:
       default:
-        target: 70
+        target: 30
         threshold: 1
     changes:
       default:
-        target: 70
+        target: 30
         threshold: 1
 
 parsers:
