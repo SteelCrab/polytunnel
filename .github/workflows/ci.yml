@@ -1,0 +1,263 @@
+# Continuous Integration workflow for Polytunnel
+#
+# This workflow runs on every push and pull request to ensure code quality across
+# multiple platforms (macOS, Windows, Linux) and architectures (x86_64, aarch64).
+# It performs:
+# 1. Build verification on all supported platforms
+# 2. Unit tests
+# 3. Code linting (clippy)
+# 4. Code formatting checks
+# 5. Security audit
+
+name: CI
+
+# Trigger conditions
+on:
+  push:
+    # Run on all branches
+    branches: ["*"]
+  pull_request:
+    # Run on all pull requests
+    branches: ["*"]
+
+env:
+  # Use stable Rust toolchain
+  RUST_TOOLCHAIN: stable
+  # Set Cargo output format to JSON for better parsing
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Job 1: Build on Linux x86_64
+  build-linux-x86:
+    name: Build (Linux x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Rust toolchain
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Cache dependencies to speed up builds
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: linux-x86_64
+
+      # Build workspace in debug mode
+      - name: Build workspace
+        run: cargo build --workspace --verbose
+
+  # Job 2: Build on macOS x86_64
+  build-macos-x86:
+    name: Build (macOS x86_64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-x86_64
+
+      - name: Build workspace
+        run: cargo build --workspace --verbose
+
+  # Job 3: Build on macOS aarch64 (Apple Silicon)
+  build-macos-aarch64:
+    name: Build (macOS aarch64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Add aarch64 target for Apple Silicon
+      - name: Add aarch64 target
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-aarch64
+
+      # Build for Apple Silicon
+      - name: Build workspace (aarch64)
+        run: cargo build --workspace --target aarch64-apple-darwin --verbose
+
+  # Job 4: Build on Windows x86_64
+  build-windows-x86:
+    name: Build (Windows x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-x86_64
+
+      - name: Build workspace
+        run: cargo build --workspace --verbose
+
+  # Job 5: Build for Linux aarch64 (cross-compilation)
+  build-linux-aarch64:
+    name: Build (Linux aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Add aarch64 target for cross-compilation
+      - name: Add aarch64 target
+        run: rustup target add aarch64-unknown-linux-gnu
+
+      # Install cross-compilation tools
+      - name: Install aarch64 cross-compilation tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: linux-aarch64
+
+      # Build for aarch64 Linux
+      - name: Build workspace (aarch64)
+        run: cargo build --workspace --target aarch64-unknown-linux-gnu --verbose
+
+  # Job 6: Run all unit tests (Linux only)
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # Run tests with output (don't stop on first failure)
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+      # Run documentation tests
+      - name: Run doc tests
+        run: cargo test --doc --workspace --verbose
+
+  # Job 7: Code linting with Clippy
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # Run Clippy with strict warnings (-D warnings)
+      # This will fail the build if there are any warnings
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # Job 8: Code formatting check
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Check code formatting without modifying files
+      - name: Check code formatting
+        run: cargo fmt --check
+
+  # Job 9: Build release binary on Linux
+  release-linux:
+    name: Release Build (Linux x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # Build in release mode for optimization
+      - name: Build release binary
+        run: cargo build --workspace --release --verbose
+
+  # Job 10: Build release binary on macOS
+  release-macos:
+    name: Release Build (macOS x86_64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --workspace --release --verbose
+
+  # Job 11: Build release binary on Windows
+  release-windows:
+    name: Release Build (Windows x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --workspace --release --verbose
+
+  # Job 12: Security audit of dependencies
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Audit dependencies for known security vulnerabilities
+      - name: Run security audit
+        uses: rustsec/audit-check-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
