@@ -118,20 +118,24 @@ impl BuildOrchestrator {
         })
     }
 
+    /// Compile main sources only
     async fn compile_sources(&mut self) -> Result<usize> {
         let source_dirs = &self.config.build.source_dirs;
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let compiler_args = self.config.build.compiler_args.clone();
 
+        // Get compile classpath
         let classpaths = self.classpath_builder.get_cached_classpath();
         let classpath = &classpaths.compile_classpath;
 
+        // Find all Java source files
         let source_files = self.find_java_files(source_dirs)?;
 
         if source_files.is_empty() {
             return Ok(0);
         }
 
+        // Compile
         let _result = self.compiler.compile(
             source_files.clone(),
             classpath.clone(),
@@ -139,6 +143,7 @@ impl BuildOrchestrator {
             compiler_args,
         )?;
 
+        // Update cache
         self.incremental.update_for_sources(&source_files)?;
 
         Ok(source_files.len())
@@ -150,15 +155,18 @@ impl BuildOrchestrator {
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
         let test_compiler_args = self.config.build.test_compiler_args.clone();
 
+        // Get test classpath
         let classpaths = self.classpath_builder.get_cached_classpath();
         let test_classpath = &classpaths.test_classpath;
 
+        // Find all test Java source files
         let test_files = self.find_java_files(test_source_dirs)?;
 
         if test_files.is_empty() {
             return Ok(());
         }
 
+        // Compile tests
         let _result = self.compiler.compile(
             test_files.clone(),
             test_classpath.clone(),
@@ -166,6 +174,7 @@ impl BuildOrchestrator {
             test_compiler_args,
         )?;
 
+        // Update cache
         self.incremental.update_for_sources(&test_files)?;
 
         Ok(())
@@ -173,6 +182,8 @@ impl BuildOrchestrator {
 
     /// Run tests
     pub async fn run_tests(&mut self, _options: &TestOptions) -> Result<TestResult> {
+        // For now, return a placeholder result
+        // Full implementation in test_runner.rs
         Ok(TestResult {
             total: 0,
             passed: 0,
@@ -182,6 +193,7 @@ impl BuildOrchestrator {
         })
     }
 
+    /// Clean build artifacts
     fn clean(&self) -> Result<()> {
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);
@@ -196,6 +208,7 @@ impl BuildOrchestrator {
         Ok(())
     }
 
+    /// Find all Java files in given directories
     fn find_java_files(&self, dirs: &[String]) -> Result<Vec<PathBuf>> {
         let mut files = Vec::new();
 
