@@ -6,4 +6,5 @@ mod config;
 mod error;
 
 pub use config::*;
-pub use error::{AppError, Result};
+#[allow(deprecated)]
+pub use error::{AppError, CoreError, Result};

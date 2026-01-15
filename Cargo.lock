@@ -764,6 +764,7 @@ dependencies = [
  "polytunnel-core",
  "polytunnel-maven",
  "semver",
+ "thiserror",
  "tokio",
 ]
 

@@ -1,7 +1,7 @@
 //! Dependency resolution algorithm
 
+use crate::error::Result;
 use crate::graph::DependencyGraph;
-use polytunnel_core::Result;
 use polytunnel_maven::{Coordinate, MavenClient};
 use std::future::Future;
 use std::pin::Pin;

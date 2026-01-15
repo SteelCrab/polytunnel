@@ -2,8 +2,9 @@
 //!
 //! Coordinates compilation, testing, and artifact management.
 
+use crate::error::{BuildError, Result};
 use crate::{BuildCache, ClasspathBuilder, JavaCompiler, TestResult, TestRunner};
-use polytunnel_core::{AppError, ProjectConfig, Result};
+use polytunnel_core::ProjectConfig;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -63,7 +64,7 @@ impl BuildOrchestrator {
     ///
     /// # Errors
     ///
-    /// * `AppError::JavacNotFound` - If javac cannot be found in PATH
+    /// * `BuildError::JavacNotFound` - If javac cannot be found in PATH
     ///
     /// # Example
     ///
@@ -97,9 +98,9 @@ impl BuildOrchestrator {
     ///
     /// # Errors
     ///
-    /// * `AppError::CompilationFailed` - If compilation fails
-    /// * `AppError::TestExecutionFailed` - If test execution fails (when not skipped)
-    /// * `AppError::SourceDirNotFound` - If source directories don't exist
+    /// * `BuildError::CompilationFailed` - If compilation fails
+    /// * `BuildError::TestExecutionFailed` - If test execution fails (when not skipped)
+    /// * `BuildError::SourceDirNotFound` - If source directories don't exist
     ///
     /// # Example
     ///
@@ -263,7 +264,7 @@ impl BuildOrchestrator {
         for dir_str in dirs {
             let dir = PathBuf::from(dir_str);
             if !dir.exists() {
-                return Err(AppError::SourceDirNotFound {
+                return Err(BuildError::SourceDirNotFound {
                     path: dir_str.clone(),
                 });
             }

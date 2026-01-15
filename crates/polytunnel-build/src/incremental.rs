@@ -1,6 +1,7 @@
 //! Incremental build support with caching
 
-use polytunnel_core::{ProjectConfig, Result};
+use crate::error::Result;
+use polytunnel_core::ProjectConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -169,8 +170,7 @@ impl BuildCache {
             std::fs::create_dir_all(parent)?;
         }
 
-        let content = serde_json::to_string_pretty(&self.entries)
-            .map_err(|e| polytunnel_core::AppError::Io(std::io::Error::other(e)))?;
+        let content = serde_json::to_string_pretty(&self.entries).map_err(std::io::Error::other)?;
         std::fs::write(&self.cache_file, content)?;
 
         Ok(())

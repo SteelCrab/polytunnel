@@ -8,3 +8,4 @@ polytunnel-core.path = "../polytunnel-core"
 polytunnel-maven.path = "../polytunnel-maven"
 tokio.workspace = true
 semver.workspace = true
+thiserror.workspace = true

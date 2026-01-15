@@ -1,8 +1,9 @@
 //! Classpath management and dependency resolution
 
 #[cfg(test)]
-use polytunnel_core::AppError;
-use polytunnel_core::{ProjectConfig, Result};
+use crate::error::BuildError;
+use crate::error::Result;
+use polytunnel_core::ProjectConfig;
 #[cfg(test)]
 use polytunnel_maven::Coordinate;
 use std::path::PathBuf;
@@ -123,7 +124,7 @@ impl ClasspathBuilder {
     fn parse_coordinate(key: &str) -> Result<Coordinate> {
         let parts: Vec<&str> = key.split(':').collect();
         if parts.len() < 2 {
-            return Err(AppError::InvalidDependency {
+            return Err(BuildError::InvalidDependency {
                 input: key.to_string(),
             });
         }

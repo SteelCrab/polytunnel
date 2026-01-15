@@ -5,6 +5,7 @@
 
 pub mod classpath;
 pub mod compiler;
+pub mod error;
 pub mod incremental;
 pub mod orchestrator;
 pub mod test_runner;
@@ -12,6 +13,7 @@ pub mod test_runner;
 // Re-exports for convenience
 pub use classpath::ClasspathBuilder;
 pub use compiler::{CompilationResult, JavaCompiler};
+pub use error::{BuildError, Result};
 pub use incremental::BuildCache;
 pub use orchestrator::{BuildOptions, BuildOrchestrator, BuildResult, TestOptions};
 pub use test_runner::{TestFramework, TestResult, TestRunner};

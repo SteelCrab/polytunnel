@@ -1,7 +1,7 @@
 //! POM XML parser
 
 use crate::coordinate::Coordinate;
-use polytunnel_core::Result;
+use crate::error::{MavenError, Result};
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use serde::{Deserialize, Serialize};
@@ -192,9 +192,9 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
             }
             Ok(Event::Eof) => break,
             Err(e) => {
-                return Err(polytunnel_core::AppError::Io(std::io::Error::other(
-                    format!("XML parse error: {}", e),
-                )));
+                return Err(MavenError::XmlParse {
+                    message: format!("XML parse error: {}", e),
+                });
             }
             _ => {}
         }
