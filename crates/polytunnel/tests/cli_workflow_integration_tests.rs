@@ -465,7 +465,8 @@ fn test_cli_package_directory_conversion() {
 #[test]
 fn test_cli_classpath_construction() {
     let jars = ["lib1.jar", "lib2.jar"];
-    let classpath = jars.join(":");
+    let sep = if cfg!(windows) { ";" } else { ":" };
+    let classpath = jars.join(sep);
     assert!(classpath.contains("lib1.jar"));
 }
 
