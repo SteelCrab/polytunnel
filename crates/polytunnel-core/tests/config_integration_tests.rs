@@ -34,8 +34,8 @@ fn test_build_config_test_directories() {
 fn test_build_config_output_directories() {
     let config = BuildConfig::default();
 
-    assert!(!config.output_dir.is_empty() || config.output_dir.is_empty());
-    assert!(!config.test_output_dir.is_empty() || config.test_output_dir.is_empty());
+    assert!(!config.output_dir.is_empty());
+    assert!(!config.test_output_dir.is_empty());
 }
 
 #[test]
@@ -91,8 +91,10 @@ fn test_project_config_with_repositories() {
 
 #[test]
 fn test_build_config_custom_modification() {
-    let mut config = BuildConfig::default();
-    config.source_dirs = vec!["custom/src".to_string()];
+    let config = BuildConfig {
+        source_dirs: vec!["custom/src".to_string()],
+        ..Default::default()
+    };
 
     assert_eq!(config.source_dirs[0], "custom/src");
 }

@@ -125,24 +125,30 @@ fn test_project_info_java_version_field() {
 
 #[test]
 fn test_build_config_source_dirs_field() {
-    let mut config = BuildConfig::default();
-    config.source_dirs = vec!["src/main/java".to_string()];
+    let config = BuildConfig {
+        source_dirs: vec!["src/main/java".to_string()],
+        ..Default::default()
+    };
 
     assert_eq!(config.source_dirs.len(), 1);
 }
 
 #[test]
 fn test_build_config_output_dir_field() {
-    let mut config = BuildConfig::default();
-    config.output_dir = "build/classes".to_string();
+    let config = BuildConfig {
+        output_dir: "build/classes".to_string(),
+        ..Default::default()
+    };
 
     assert_eq!(config.output_dir, "build/classes");
 }
 
 #[test]
 fn test_build_config_cache_dir_field() {
-    let mut config = BuildConfig::default();
-    config.cache_dir = ".cache".to_string();
+    let config = BuildConfig {
+        cache_dir: ".cache".to_string(),
+        ..Default::default()
+    };
 
     assert_eq!(config.cache_dir, ".cache");
 }
@@ -211,13 +217,13 @@ fn test_dependency_collection_iteration() {
     deps.insert("lib1".to_string(), Dependency::Simple("1.0.0".to_string()));
     deps.insert("lib2".to_string(), Dependency::Simple("2.0.0".to_string()));
 
-    let count = deps.iter().count();
+    let count = deps.len();
     assert_eq!(count, 2);
 }
 
 #[test]
 fn test_repository_collection_iteration() {
-    let repos = vec![
+    let repos = [
         Repository {
             name: "repo1".to_string(),
             url: "url1".to_string(),
@@ -228,7 +234,7 @@ fn test_repository_collection_iteration() {
         },
     ];
 
-    let count = repos.iter().count();
+    let count = repos.len();
     assert_eq!(count, 2);
 }
 
@@ -237,7 +243,7 @@ fn test_source_dirs_collection_mutation() {
     let mut config = BuildConfig::default();
     config.source_dirs.push("src/extra".to_string());
 
-    assert!(config.source_dirs.len() > 0);
+    assert!(!config.source_dirs.is_empty());
 }
 
 #[test]
@@ -272,7 +278,7 @@ fn test_dependency_removal() {
 
 #[test]
 fn test_repository_lookup_by_name() {
-    let repos = vec![Repository {
+    let repos = [Repository {
         name: "central".to_string(),
         url: "https://repo1".to_string(),
     }];
@@ -393,7 +399,7 @@ fn test_detailed_dependency_scope_field_access() {
 
 #[test]
 fn test_repository_list_filtering() {
-    let repos = vec![
+    let repos = [
         Repository {
             name: "central".to_string(),
             url: "https://repo1".to_string(),
@@ -410,7 +416,7 @@ fn test_repository_list_filtering() {
 
 #[test]
 fn test_source_dirs_contains_search() {
-    let dirs = vec!["src/main/java".to_string(), "src/test/java".to_string()];
+    let dirs = ["src/main/java".to_string(), "src/test/java".to_string()];
 
     let has_main = dirs.iter().any(|d| d.contains("main"));
     assert!(has_main);

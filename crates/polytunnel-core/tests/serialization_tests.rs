@@ -110,7 +110,7 @@ fn test_full_config_structure() {
 
 #[test]
 fn test_multiple_repositories() {
-    let repos = vec![
+    let repos = [
         Repository {
             name: "central".to_string(),
             url: "https://repo1.maven.org/maven2/".to_string(),
@@ -128,7 +128,7 @@ fn test_multiple_repositories() {
 
 #[test]
 fn test_dependency_scope_variants() {
-    let scopes = vec![
+    let scopes = [
         DependencyScope::Compile,
         DependencyScope::Test,
         DependencyScope::Runtime,
@@ -140,8 +140,10 @@ fn test_dependency_scope_variants() {
 
 #[test]
 fn test_build_config_with_custom_args() {
-    let mut config = BuildConfig::default();
-    config.compiler_args = vec!["-encoding".to_string(), "UTF-8".to_string()];
+    let config = BuildConfig {
+        compiler_args: vec!["-encoding".to_string(), "UTF-8".to_string()],
+        ..Default::default()
+    };
 
     assert_eq!(config.compiler_args.len(), 2);
     assert!(config.compiler_args.contains(&"-encoding".to_string()));

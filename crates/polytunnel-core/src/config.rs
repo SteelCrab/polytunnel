@@ -40,7 +40,7 @@ pub enum Dependency {
     },
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyScope {
     #[default]
@@ -57,7 +57,7 @@ pub struct Repository {
 }
 
 /// Build configuration
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BuildConfig {
     #[serde(default = "default_source_dirs")]
     pub source_dirs: Vec<String>,
@@ -82,6 +82,21 @@ pub struct BuildConfig {
 
     #[serde(default = "default_cache_dir")]
     pub cache_dir: String,
+}
+
+impl Default for BuildConfig {
+    fn default() -> Self {
+        Self {
+            source_dirs: default_source_dirs(),
+            test_source_dirs: default_test_source_dirs(),
+            output_dir: default_output_dir(),
+            test_output_dir: default_test_output_dir(),
+            compiler_args: Vec::new(),
+            test_compiler_args: Vec::new(),
+            test_framework: default_test_framework(),
+            cache_dir: default_cache_dir(),
+        }
+    }
 }
 
 fn default_source_dirs() -> Vec<String> {
