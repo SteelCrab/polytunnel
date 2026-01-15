@@ -237,25 +237,17 @@ impl TestRunner {
         // Parse output
         let stdout = String::from_utf8_lossy(&output.stdout);
 
-        let passed = if let Some(cap) = stdout
+        let passed = stdout
             .lines()
             .find(|l| l.contains("tests successful"))
             .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok()))
-        {
-            cap
-        } else {
-            0
-        };
+            .unwrap_or_default();
 
-        let failed = if let Some(cap) = stdout
+        let failed = stdout
             .lines()
             .find(|l| l.contains("tests failed"))
             .and_then(|l| l.split_whitespace().find_map(|w| w.parse::<usize>().ok()))
-        {
-            cap
-        } else {
-            0
-        };
+            .unwrap_or_default();
 
         // Total is sum of passed + failed + aborted/skipped if we parse them
         // For now, let's trust the "tests found" line or just sum passed + failed
