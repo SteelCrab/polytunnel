@@ -7,7 +7,8 @@
 # 2. Unit tests
 # 3. Code linting (clippy)
 # 4. Code formatting checks
-# 5. Security audit
+# 5. Code coverage analysis (llvm-cov)
+# 6. Security audit
 
 name: CI
 
@@ -259,7 +260,38 @@ jobs:
       - name: Build release binary
         run: cargo build --workspace --release --verbose
 
-  # Job 12: Security audit of dependencies
+  # Job 12: Code coverage with llvm-cov
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # Install llvm-cov
+      - name: Install llvm-cov
+        run: cargo install cargo-llvm-cov
+
+      # Generate code coverage report
+      - name: Generate code coverage
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+
+      # Upload coverage to codecov
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./lcov.info
+
+  # Job 13: Security audit of dependencies
   security:
     name: Security Audit
     runs-on: ubuntu-latest
