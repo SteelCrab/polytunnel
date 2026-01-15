@@ -206,7 +206,11 @@ impl BuildOrchestrator {
 
         // Get test classpath
         let classpaths = self.classpath_builder.get_cached_classpath();
-        let test_classpath = &classpaths.test_classpath;
+        let mut test_classpath = classpaths.test_classpath.clone();
+
+        // Add main output dir to classpath so tests can see main classes
+        let output_dir = PathBuf::from(&self.config.build.output_dir);
+        test_classpath.push(output_dir);
 
         // Find all test Java source files
         let test_files = self.find_java_files(test_source_dirs)?;
