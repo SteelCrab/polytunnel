@@ -1,6 +1,30 @@
+# Rust
 /target
+Cargo.lock
+*.rs.bk
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.log
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Agent / AI
 .agent/
 .claude/
 .gemini/
+.qodo/
+
+# Polytunnel
 .polytunnel/
-*.log
+polytunnel.lock
