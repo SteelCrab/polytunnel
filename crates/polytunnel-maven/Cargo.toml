@@ -1,0 +1,15 @@
+[package]
+name = "polytunnel-maven"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+serde.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+quick-xml.workspace = true
+tokio.workspace = true
+thiserror.workspace = true
+semver.workspace = true
+urlencoding = "2.1"

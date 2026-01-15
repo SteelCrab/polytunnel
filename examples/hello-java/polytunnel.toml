@@ -1,0 +1,19 @@
+[project]
+name = "hello-java"
+java_version = "17"
+
+[build]
+source_dirs = []
+test_source_dirs = []
+output_dir = ""
+test_output_dir = ""
+compiler_args = []
+test_compiler_args = []
+test_framework = ""
+cache_dir = ""
+
+[dependencies]
+
+[[repositories]]
+name = "central"
+url = "https://repo1.maven.org/maven2/"

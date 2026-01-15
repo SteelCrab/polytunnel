@@ -1,0 +1,15 @@
+[package]
+name = "polytunnel"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "pt"
+path = "src/main.rs"
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+polytunnel-resolver.path = "../polytunnel-resolver"
+polytunnel-build.path = "../polytunnel-build"
+clap.workspace = true
+tokio.workspace = true

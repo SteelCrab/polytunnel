@@ -1,0 +1,6 @@
+/target
+.agent/
+.claude/
+.gemini/
+.polytunnel/
+*.log

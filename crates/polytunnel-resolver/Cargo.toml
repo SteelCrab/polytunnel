@@ -1,0 +1,9 @@
+[package]
+name = "polytunnel-resolver"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+polytunnel-maven.path = "../polytunnel-maven"
+tokio.workspace = true
