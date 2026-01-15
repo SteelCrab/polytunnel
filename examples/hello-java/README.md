@@ -35,24 +35,25 @@ pt build --clean
 
 ## Dependencies
 
-- **Google Guava 33.0.0-jre** - Utility library with useful functions
-  - Used in `App.greet()` via `Strings.isNullOrEmpty()`
-  - Used in `App.repeat()` via `Strings.repeat()`
-
+- **Apache Commons Lang 3.14.0** - Utility library
+  - Used in `App.greet()` for string utility
+    
 - **JUnit 5 (Jupiter) 5.10.1** - Modern testing framework (test scope only)
   - 5 unit tests demonstrating various test cases
-  - Auto-detected by Polytunnel
+
+- **JUnit Platform Console 1.10.1** - Test runner (test scope only)
+  - Required for executing tests via CLI
 
 ## App.java
 
 The `App` class demonstrates:
-- Importing external dependencies (Guava)
+- Importing external dependencies (Commons Lang)
 - Simple string manipulation with utility functions
 - Clean, readable code structure
 
 ```java
 package com.example;
-import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 public class App {
     public static void main(String[] args) {
@@ -61,14 +62,14 @@ public class App {
     }
 
     public String greet(String name) {
-        if (Strings.isNullOrEmpty(name)) {
+        if (StringUtils.isBlank(name)) {
             return "Hello, Guest!";
         }
         return "Hello, " + name + "!";
     }
 
     public String repeat(String text, int count) {
-        return Strings.repeat(text, count);
+        return StringUtils.repeat(text, count);
     }
 }
 ```
@@ -101,22 +102,25 @@ output_dir = "target/classes"
 test_output_dir = "target/test-classes"
 
 [dependencies]
-"com.google.guava:guava" = "33.0.0-jre"
+"org.apache.commons:commons-lang3" = "3.14.0"
 
 [dependencies."org.junit.jupiter:junit-jupiter"]
 version = "5.10.1"
+scope = "test"
+
+[dependencies."org.junit.platform:junit-platform-console-standalone"]
+version = "1.10.1"
 scope = "test"
 ```
 
 ### 2. Build Process (pt build)
 
 ```
-pt build
-├── Resolve dependencies → Get Guava & JUnit 5
-├── Download JARs to .polytunnel/cache/
+pt build -v
+├── Resolve dependencies → Downloads Commons Lang, JUnit, etc.
 ├── Compile src/main/java → target/classes/
 ├── Compile src/test/java → target/test-classes/
-├── Run tests using JUnit 5 → Test results
+├── Run tests using JUnit 5
 └── Display summary
 ```
 
@@ -126,20 +130,30 @@ pt build
 pt test
 ├── Compile test sources (if needed)
 ├── Detect JUnit 5 from classpath
-├── Execute 5 unit tests
+├── Execute tests
 └── Report pass/fail results
 ```
 
 ## Expected Output
 
-### Build Output
+### CLI Output (Full Process)
 
 ```
-Building hello-java...
-Resolving dependencies...
-Compiling 1 source files...
-Compiling 1 test file...
-Running tests...
+$ pt build -v
+   Resolving dependencies
+   Downloading org.junit.jupiter:junit-jupiter:5.10.1
+   ... (download logs) ...
+   Compiling hello-java v0.1.0
+    Finished dev [unoptimized + debuginfo] target(s) in 1.19s
+   Compiling hello-java v0.1.0 (test)
+
+     Running unittests (target/test-classes)
+     Testing hello-java ...
+Detected test framework: JUnit 5
+[JUnit Tree Output details...]
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+```
 
 ============================================================
 Build Summary:
