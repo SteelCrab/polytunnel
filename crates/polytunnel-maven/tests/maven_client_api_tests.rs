@@ -39,7 +39,13 @@ fn test_maven_central_repository_url() {
     // MavenClient doesn't have repositories field anymore, it has base_url
     assert!(
         client
-            .jar_url(&Coordinate::new("org.junit", "junit", "4.13.2"))
+            .jar_url(&Coordinate {
+                group_id: "org.junit".to_string(),
+                artifact_id: "junit".to_string(),
+                version: "4.13.2".to_string(),
+                classifier: None,
+                packaging: "jar".to_string(),
+            })
             .contains("repo1.maven.org")
     );
 }
