@@ -194,8 +194,8 @@ impl ClasspathBuilder {
     ) -> Option<polytunnel_maven::DependencyScope> {
         // Find if this coordinate matches any root dependency key
         for (key, dep) in &self.config.dependencies {
-            if let Ok(root_coord) = Self::parse_coordinate(key) {
-                if root_coord.group_id == coord.group_id
+            if let Ok(root_coord) = Self::parse_coordinate(key)
+                && root_coord.group_id == coord.group_id
                     && root_coord.artifact_id == coord.artifact_id
                 {
                     // Map ProjectConfig scope (polytunnel_core::DependencyScope) to Maven scope
@@ -215,7 +215,6 @@ impl ClasspathBuilder {
                         }
                     });
                 }
-            }
         }
         None
     }

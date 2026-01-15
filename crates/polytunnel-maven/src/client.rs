@@ -124,7 +124,7 @@ impl MavenClient {
         let url = self.jar_url(coord);
 
         if verbose {
-            println!("   Downloading {}", coord.to_string());
+            println!("   Downloading {}", coord);
         }
 
         let bytes = self.http.get(&url).send().await?.bytes().await?;
