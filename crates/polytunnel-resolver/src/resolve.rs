@@ -41,6 +41,7 @@ impl Resolver {
         })
     }
 
+    #[allow(clippy::type_complexity)]
     fn resolve_parent_data<'a>(
         &'a self,
         parent_coord: &'a Coordinate,
