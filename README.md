@@ -13,6 +13,7 @@
 - 🔒 **Reproducible** - Lock file support (planned)
 - 🛠️ **Build** - Direct javac compilation
 - 🧪 **Test** - Auto-detect JUnit 5/4, TestNG
+- 🖥️ **Cross-Platform** - Windows (amd64, ARM64), macOS (x86_64, ARM64), Linux (all architectures)
 
 ## Comparison with Existing Tools
 

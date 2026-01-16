@@ -145,6 +145,10 @@ impl JavaCompiler {
     #[allow(clippy::collapsible_if)]
     fn find_javac() -> Result<PathBuf> {
         // Try to find javac in PATH
+        // Supports:
+        // - Windows (amd64, arm64, x86)
+        // - Unix/Linux (x86_64, aarch64, etc.)
+        // - macOS (x86_64, aarch64/ARM64)
         if let Ok(output) = Command::new("which")
             .arg("javac")
             .output()
@@ -159,10 +163,13 @@ impl JavaCompiler {
         }
 
         // Try JAVA_HOME environment variable
+        // Works on all platforms including Windows ARM64
         if let Ok(java_home) = std::env::var("JAVA_HOME") {
             let javac_path = if cfg!(windows) {
+                // Windows: javac.exe (amd64, arm64, x86)
                 PathBuf::from(&java_home).join("bin").join("javac.exe")
             } else {
+                // Unix-like: javac (x86_64, aarch64, etc.)
                 PathBuf::from(&java_home).join("bin").join("javac")
             };
 
@@ -171,7 +178,7 @@ impl JavaCompiler {
             }
         }
 
-        // Try direct javac on Windows
+        // Try direct javac on Windows (all architectures)
         if cfg!(windows) && Command::new("javac.exe").arg("-version").output().is_ok() {
             return Ok(PathBuf::from("javac.exe"));
         }
