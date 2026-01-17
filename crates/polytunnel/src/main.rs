@@ -330,7 +330,7 @@ async fn cmd_vscode() -> Result<()> {
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
 
     // Delegate to IDE crate
-    polytunnel_ide::vscode::generate(&config)
+    polytunnel_ide::vscode::generate(&config, Path::new("."))
         .await
         .map_err(|e| match e {
             polytunnel_ide::IdeError::Build(e) => e,

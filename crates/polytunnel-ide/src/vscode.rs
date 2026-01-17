@@ -4,7 +4,7 @@ use polytunnel_build::BuildOrchestrator;
 use polytunnel_core::ProjectConfig;
 use std::path::Path;
 
-pub async fn generate(config: &ProjectConfig) -> Result<()> {
+pub async fn generate(config: &ProjectConfig, root_path: &Path) -> Result<()> {
     print_status("Generating", "VS Code configuration...", Color::Cyan);
 
     let name = config.project.name.clone();
@@ -41,7 +41,7 @@ pub async fn generate(config: &ProjectConfig) -> Result<()> {
 "#,
         name
     );
-    std::fs::write(".project", project_xml)?;
+    std::fs::write(root_path.join(".project"), project_xml)?;
     print_status("Created", ".project", Color::Green);
 
     // 2. Generate .classpath
@@ -90,32 +90,32 @@ pub async fn generate(config: &ProjectConfig) -> Result<()> {
     }
 
     classpath_xml.push_str("</classpath>\n");
-    std::fs::write(".classpath", classpath_xml)?;
+    std::fs::write(root_path.join(".classpath"), classpath_xml)?;
     print_status("Created", ".classpath", Color::Green);
 
     // 3. Generate .vscode/settings.json
-    let vscode_dir = Path::new(".vscode");
+    let vscode_dir = root_path.join(".vscode");
     if !vscode_dir.exists() {
-        std::fs::create_dir(vscode_dir)?;
+        std::fs::create_dir(&vscode_dir)?;
     }
 
     let settings_json = r#"{
     "java.configuration.updateBuildConfiguration": "disabled"
 }
 "#;
-    std::fs::write(".vscode/settings.json", settings_json)?;
+    std::fs::write(vscode_dir.join("settings.json"), settings_json)?;
     print_status("Created", ".vscode/settings.json", Color::Green);
 
     // 4. Update .gitignore
-    update_gitignore()?;
+    update_gitignore(root_path)?;
 
     Ok(())
 }
 
-fn update_gitignore() -> Result<()> {
-    let gitignore_path = Path::new(".gitignore");
+fn update_gitignore(root_path: &Path) -> Result<()> {
+    let gitignore_path = root_path.join(".gitignore");
     let mut current_content = if gitignore_path.exists() {
-        std::fs::read_to_string(gitignore_path).map_err(IdeError::Io)?
+        std::fs::read_to_string(&gitignore_path).map_err(IdeError::Io)?
     } else {
         String::new()
     };
