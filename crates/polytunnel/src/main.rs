@@ -68,6 +68,8 @@ enum Commands {
         #[arg(long)]
         fail_fast: bool,
     },
+    /// Generate VS Code configuration
+    Vscode,
 }
 
 use colored::*;
@@ -97,6 +99,7 @@ async fn main() -> Result<()> {
             verbose,
             fail_fast,
         } => cmd_test(pattern, verbose, fail_fast).await?,
+        Commands::Vscode => cmd_vscode().await?,
     }
 
     Ok(())
@@ -318,6 +321,22 @@ async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Re
             message: format!("{} test(s) failed", result.failed),
         });
     }
+
+    Ok(())
+}
+
+async fn cmd_vscode() -> Result<()> {
+    // Load configuration
+    let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
+
+    // Delegate to IDE crate
+    polytunnel_ide::vscode::generate(&config)
+        .await
+        .map_err(|e| match e {
+            polytunnel_ide::IdeError::Build(e) => e,
+            polytunnel_ide::IdeError::Core(e) => BuildError::Core(e),
+            polytunnel_ide::IdeError::Io(e) => BuildError::Io(e),
+        })?;
 
     Ok(())
 }

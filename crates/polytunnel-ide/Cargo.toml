@@ -1,0 +1,12 @@
+[package]
+name = "polytunnel-ide"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+polytunnel-build.path = "../polytunnel-build"
+thiserror.workspace = true
+colored = "2.1"

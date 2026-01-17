@@ -11,6 +11,7 @@ path = "src/main.rs"
 polytunnel-core.path = "../polytunnel-core"
 polytunnel-resolver.path = "../polytunnel-resolver"
 polytunnel-build.path = "../polytunnel-build"
+polytunnel-ide.path = "../polytunnel-ide"
 clap.workspace = true
 tokio.workspace = true
 colored = "2.1"
