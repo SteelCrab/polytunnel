@@ -130,5 +130,7 @@ mod tests {
     fn test_arch_display() {
         assert_eq!(format!("{}", Arch::X86_64), "x86_64");
         assert_eq!(format!("{}", Arch::Aarch64), "aarch64 (ARM64)");
+        assert_eq!(format!("{}", Arch::X86), "x86");
+        assert_eq!(format!("{}", Arch::Unknown), "unknown");
     }
 }
