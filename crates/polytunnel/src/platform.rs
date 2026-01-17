@@ -10,6 +10,7 @@ pub enum Os {
     Windows,
     MacOS,
     Linux,
+    Unknown,
 }
 
 impl fmt::Display for Os {
@@ -18,6 +19,7 @@ impl fmt::Display for Os {
             Os::Windows => write!(f, "Windows"),
             Os::MacOS => write!(f, "macOS"),
             Os::Linux => write!(f, "Linux"),
+            Os::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -56,8 +58,10 @@ impl Platform {
             Os::Windows
         } else if cfg!(target_os = "macos") {
             Os::MacOS
-        } else {
+        } else if cfg!(target_os = "linux") {
             Os::Linux
+        } else {
+            Os::Unknown
         };
 
         let arch = if cfg!(target_arch = "x86_64") {
