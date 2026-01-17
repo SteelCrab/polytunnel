@@ -1,0 +1,16 @@
+[package]
+name = "polytunnel-ide"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+polytunnel-build.path = "../polytunnel-build"
+thiserror.workspace = true
+colored = "2.1"
+
+[dev-dependencies]
+tempfile = "3.10"
+tokio = { version = "1.0", features = ["macros"] }

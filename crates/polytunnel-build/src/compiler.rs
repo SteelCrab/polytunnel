@@ -155,7 +155,12 @@ impl JavaCompiler {
             .or_else(|_| Command::new("where").arg("javac").output())
         {
             if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let path_str = String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
                 if !path_str.is_empty() {
                     return Ok(PathBuf::from(path_str));
                 }

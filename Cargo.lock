@@ -730,6 +730,7 @@ dependencies = [
  "colored",
  "polytunnel-build",
  "polytunnel-core",
+ "polytunnel-ide",
  "polytunnel-resolver",
  "tokio",
 ]
@@ -757,6 +758,16 @@ dependencies = [
  "serde",
  "thiserror",
  "toml",
+]
+
+[[package]]
+name = "polytunnel-ide"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "polytunnel-build",
+ "polytunnel-core",
+ "thiserror",
 ]
 
 [[package]]
