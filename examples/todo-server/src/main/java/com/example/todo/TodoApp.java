@@ -8,12 +8,12 @@ public class TodoApp {
     private static final Logger log = LoggerFactory.getLogger(TodoApp.class);
 
     public static void main(String[] args) {
-        Javalin app = Javalin.create().start(7000);
+        Javalin app = Javalin.create().start(8080);
 
         app.get("/", ctx -> ctx.result("Hello Polytunnel!"));
         app.get("/todos", TodoController::getAll);
         app.post("/todos", TodoController::create);
 
-        log.info("Server started on port 7000");
+        log.info("Server started on port 8080");
     }
 }
