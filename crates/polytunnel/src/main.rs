@@ -4,6 +4,9 @@ use polytunnel_core::ProjectConfig;
 use std::path::Path;
 use std::time::Instant;
 
+mod platform;
+use platform::Platform;
+
 type Result<T> = std::result::Result<T, BuildError>;
 
 #[derive(Parser)]
@@ -143,6 +146,11 @@ async fn cmd_tree() -> Result<()> {
 
 async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
     let start = Instant::now();
+
+    // Print platform information if verbose
+    if verbose {
+        eprintln!("Build platform: {}", Platform::detect());
+    }
 
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;

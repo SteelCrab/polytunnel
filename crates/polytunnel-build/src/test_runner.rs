@@ -324,6 +324,10 @@ impl TestRunner {
     }
 
     /// Format classpath for command line
+    ///
+    /// Uses OS-specific path separator:
+    /// - Windows (all architectures including ARM64): `;`
+    /// - Unix/Linux/macOS (all architectures): `:`
     #[allow(dead_code)]
     fn format_classpath(&self) -> String {
         let separator = if cfg!(windows) { ";" } else { ":" };

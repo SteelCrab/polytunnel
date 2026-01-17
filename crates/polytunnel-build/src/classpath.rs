@@ -263,6 +263,10 @@ impl ClasspathBuilder {
     }
 
     /// Format classpath for command line (helper for tests)
+    ///
+    /// Uses OS-specific path separator:
+    /// - Windows (all architectures): `;`
+    /// - Unix/Linux/macOS (all architectures): `:`
     #[allow(dead_code)]
     fn format_classpath(paths: &[PathBuf]) -> String {
         let separator = if cfg!(windows) { ";" } else { ":" };
