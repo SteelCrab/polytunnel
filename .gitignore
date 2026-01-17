@@ -32,3 +32,6 @@ build/
 # Polytunnel
 .polytunnel/
 polytunnel.lock
+
+# Document
+docs/

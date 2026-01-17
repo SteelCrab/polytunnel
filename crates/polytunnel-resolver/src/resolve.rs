@@ -31,8 +31,18 @@ impl Resolver {
     pub async fn resolve(&mut self, deps: &[Coordinate]) -> Result<ResolvedTree> {
         let mut all_deps = Vec::new();
 
+        // Build map of overrides from root dependencies (G:A -> Version)
+        // This effectively implements "Nearest Wins" strategy where root deps (depth 0)
+        // override any transitive versions.
+        let mut overrides = std::collections::HashMap::new();
         for dep in deps {
-            self.resolve_recursive(dep, 0, &mut all_deps).await?;
+            let key = format!("{}:{}", dep.group_id, dep.artifact_id);
+            overrides.insert(key, dep.version.clone());
+        }
+
+        for dep in deps {
+            self.resolve_recursive(dep, 0, &mut all_deps, &overrides)
+                .await?;
         }
 
         Ok(ResolvedTree {
@@ -41,110 +51,102 @@ impl Resolver {
         })
     }
 
+    fn apply_override(
+        coord: &Coordinate,
+        overrides: &std::collections::HashMap<String, String>,
+    ) -> Coordinate {
+        let ga = format!("{}:{}", coord.group_id, coord.artifact_id);
+        let mut new_coord = coord.clone();
+        if let Some(override_version) = overrides.get(&ga)
+            && coord.version != *override_version
+        {
+            new_coord.version = override_version.clone();
+        }
+
+        new_coord
+    }
+
     #[allow(clippy::type_complexity)]
-    fn resolve_parent_data<'a>(
+    fn fetch_effective_pom<'a>(
         &'a self,
-        parent_coord: &'a Coordinate,
+        coord: &'a Coordinate,
         depth: usize,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<(
-                        std::collections::HashMap<String, String>,
-                        Vec<polytunnel_maven::PomDependency>,
-                    )>,
-                > + Send
-                + 'a,
-        >,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<polytunnel_maven::Pom>> + Send + 'a>> {
         Box::pin(async move {
+            let mut pom = self.client.fetch_pom(coord).await?;
+
+            // Limit recursion depth for parent resolution
             if depth > 10 {
-                // Avoid infinite parent recursion
-                return Ok((std::collections::HashMap::new(), Vec::new()));
+                return Ok(pom);
             }
 
-            let pom = self.client.fetch_pom(parent_coord).await?;
-            let mut props = pom.properties.clone();
-            let mut dm = pom.dependency_management.clone();
-
-            if let Some(grandparent) = &pom.parent {
-                let (gp_props, gp_dm) = self.resolve_parent_data(grandparent, depth + 1).await?;
-
-                // Parent keys override Grandparent keys
-                for (k, v) in gp_props {
-                    props.entry(k).or_insert(v);
+            if let Some(parent_coord) = &pom.parent {
+                match self.fetch_effective_pom(parent_coord, depth + 1).await {
+                    Ok(parent_pom) => {
+                        pom.merge_dependency_management(parent_pom.dependency_management);
+                        pom.merge_properties(&parent_pom.properties);
+                    }
+                    Err(e) => {
+                        println!("Warning: Failed to resolve parent {}: {}", parent_coord, e);
+                    }
                 }
-
-                // Parent DM comes before Grandparent DM (we append GP to end)
-                dm.extend(gp_dm);
             }
 
-            Ok((props, dm))
+            Ok(pom)
         })
+    }
+
+    fn determine_transitive_deps(pom: &polytunnel_maven::Pom) -> Vec<Coordinate> {
+        pom.dependencies
+            .iter()
+            .filter(|d| {
+                matches!(
+                    d.scope,
+                    polytunnel_maven::DependencyScope::Compile
+                        | polytunnel_maven::DependencyScope::Provided
+                )
+            })
+            .filter(|d| !d.optional)
+            .filter_map(|d| {
+                // version is Option<String> in PomDependency, but Coordinate needs String.
+                // After fill_missing_versions(), version should be set.
+                // We default to "LATEST" or handle None if still missing,
+                // but typically managed deps will have versions.
+                d.version
+                    .as_ref()
+                    .map(|v| Coordinate::new(&d.group_id, &d.artifact_id, v))
+            })
+            .collect()
     }
 
     fn resolve_recursive<'a>(
         &'a mut self,
-        coord: &'a Coordinate,
+        requested_coord: &'a Coordinate,
         depth: usize,
         collected: &'a mut Vec<Coordinate>,
+        overrides: &'a std::collections::HashMap<String, String>,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
         Box::pin(async move {
+            let coord = Self::apply_override(requested_coord, overrides);
             let key = coord.to_string();
 
-            // Skip if already resolved
             if self.graph.contains(&key) {
                 return Ok(());
             }
 
-            // Fetch POM
-            let mut pom = self.client.fetch_pom(coord).await?;
-
-            // Resolve parent properties and DM
-            if let Some(parent) = &pom.parent {
-                match self.resolve_parent_data(parent, 0).await {
-                    Ok((parent_props, parent_dm)) => {
-                        pom.merge_dependency_management(parent_dm);
-                        pom.merge_properties(&parent_props);
-                    }
-                    Err(e) => {
-                        println!("Warning: Failed to resolve parent {}: {}", parent, e);
-                    }
-                }
-            }
-
-            // Fill missing versions using Dependency Management
+            let mut pom = self.fetch_effective_pom(&coord, 0).await?;
             pom.fill_missing_versions();
 
-            let transitive: Vec<Coordinate> = pom
-                .dependencies
-                .iter()
-                .filter(|d| {
-                    // Include Compile and Provided scope (Provided scope is needed for Kotlin stdlib, etc.)
-                    matches!(
-                        d.scope,
-                        polytunnel_maven::DependencyScope::Compile
-                            | polytunnel_maven::DependencyScope::Provided
-                    )
-                })
-                .filter(|d| !d.optional)
-                .filter_map(|d| {
-                    d.version
-                        .as_ref()
-                        .map(|v| Coordinate::new(&d.group_id, &d.artifact_id, v))
-                })
-                .collect();
+            let transitive = Self::determine_transitive_deps(&pom);
 
             // Add to graph
             self.graph
                 .add_node(coord.clone(), transitive.clone(), depth);
 
-            // Only add to collected dependencies if it's not a POM (no JAR)
+            // Add to collected if it's a JAR
             if pom.packaging != "pom" {
-                // Deduplication: if already have this G:A in collected with some version,
-                // we should decide. Maven uses "nearest" (first one wins in BFS).
-                // Since this is DFS, first one wins might be okay, or we can keep map.
                 let ga = format!("{}:{}", coord.group_id, coord.artifact_id);
+                // "Nearest wins" approximation for DFS: first visit wins (or keep map)
                 if !collected
                     .iter()
                     .any(|c| format!("{}:{}", c.group_id, c.artifact_id) == ga)
@@ -153,10 +155,9 @@ impl Resolver {
                 }
             }
 
-            // Recursively resolve transitive dependencies
             for trans_dep in transitive {
                 if let Err(e) = self
-                    .resolve_recursive(&trans_dep, depth + 1, collected)
+                    .resolve_recursive(&trans_dep, depth + 1, collected, overrides)
                     .await
                 {
                     println!("Warning: Failed to resolve dependency {}: {}", trans_dep, e);
