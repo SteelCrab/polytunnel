@@ -106,6 +106,41 @@ pub async fn generate(config: &ProjectConfig) -> Result<()> {
     std::fs::write(".vscode/settings.json", settings_json)?;
     print_status("Created", ".vscode/settings.json", Color::Green);
 
+    // 4. Update .gitignore
+    update_gitignore()?;
+
+    Ok(())
+}
+
+fn update_gitignore() -> Result<()> {
+    let gitignore_path = Path::new(".gitignore");
+    let mut current_content = if gitignore_path.exists() {
+        std::fs::read_to_string(gitignore_path).map_err(IdeError::Io)?
+    } else {
+        String::new()
+    };
+
+    let mut updated = false;
+    if !current_content.contains(".project") {
+        if !current_content.ends_with('\n') && !current_content.is_empty() {
+            current_content.push('\n');
+        }
+        current_content.push_str(".project\n");
+        updated = true;
+    }
+    if !current_content.contains(".classpath") {
+        if !current_content.ends_with('\n') && !current_content.is_empty() {
+            current_content.push('\n');
+        }
+        current_content.push_str(".classpath\n");
+        updated = true;
+    }
+
+    if updated {
+        std::fs::write(gitignore_path, current_content).map_err(IdeError::Io)?;
+        print_status("Updated", ".gitignore", Color::Green);
+    }
+
     Ok(())
 }
 
