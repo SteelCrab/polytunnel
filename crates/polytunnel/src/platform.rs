@@ -43,7 +43,7 @@ impl fmt::Display for Arch {
 }
 
 /// Platform information (OS + Architecture)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Platform {
     pub os: Os,
     pub arch: Arch,
