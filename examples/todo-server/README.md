@@ -24,18 +24,34 @@ todo-server/
 
 ## Usage
 
-### 1. Build and Run Tests
+### 1. Build
+To resolve dependencies and compile the project, run:
+
 ```bash
 pt build -v
 ```
 You will see Polytunnel resolving dozens of transitive dependencies (Jetty, Kotlin, etc.) required by Javalin.
 
-### 2. Run the Server
-(Note: Polytunnel doesn't have a `run` command yet, so use `java` directly with the classpath)
+### 2. Run
+#### Option A: Run via VS Code (Recommended)
+This is the easiest way to run the application, as Polytunnel generates the necessary classpath configuration for you.
+
+1. Generate VS Code configuration files:
+   ```bash
+   pt vscode
+   ```
+2. Open the `todo-server` folder in VS Code.
+3. Open `src/main/java/com/example/todo/TodoApp.java`.
+4. Click **Run** or **Debug** (provided by the "Extension Pack for Java").
+
+#### Option B: Run Manually
+Currently, `pt` does not produce a "fat jar" or a helper script to run easily from the CLI. You must construct the classpath manually pointing to your local Polytunnel cache (usually `~/.polytunnel/cache`), or rely on the IDE.
+
+### 3. Run Tests
+To execute unit tests:
 
 ```bash
-# Simulating run (manual classpath construction is hard, future feature!)
-# For now, this example mainly checks build success and test passing.
+pt test
 ```
 
 ## Dependencies

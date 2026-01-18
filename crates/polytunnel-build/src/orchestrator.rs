@@ -240,6 +240,11 @@ impl BuildOrchestrator {
         Ok(())
     }
 
+    /// Get the resolved classpath
+    pub fn get_resolved_classpath(&self) -> crate::classpath::ClasspathResult {
+        self.classpath_builder.get_cached_classpath()
+    }
+
     /// Run tests
     pub async fn run_tests(&mut self, options: &TestOptions) -> Result<TestResult> {
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);

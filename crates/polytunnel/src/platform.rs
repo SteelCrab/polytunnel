@@ -10,6 +10,7 @@ pub enum Os {
     Windows,
     MacOS,
     Linux,
+    Unknown,
 }
 
 impl fmt::Display for Os {
@@ -18,6 +19,7 @@ impl fmt::Display for Os {
             Os::Windows => write!(f, "Windows"),
             Os::MacOS => write!(f, "macOS"),
             Os::Linux => write!(f, "Linux"),
+            Os::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -43,7 +45,7 @@ impl fmt::Display for Arch {
 }
 
 /// Platform information (OS + Architecture)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Platform {
     pub os: Os,
     pub arch: Arch,
@@ -56,8 +58,10 @@ impl Platform {
             Os::Windows
         } else if cfg!(target_os = "macos") {
             Os::MacOS
-        } else {
+        } else if cfg!(target_os = "linux") {
             Os::Linux
+        } else {
+            Os::Unknown
         };
 
         let arch = if cfg!(target_arch = "x86_64") {
@@ -126,5 +130,7 @@ mod tests {
     fn test_arch_display() {
         assert_eq!(format!("{}", Arch::X86_64), "x86_64");
         assert_eq!(format!("{}", Arch::Aarch64), "aarch64 (ARM64)");
+        assert_eq!(format!("{}", Arch::X86), "x86");
+        assert_eq!(format!("{}", Arch::Unknown), "unknown");
     }
 }
