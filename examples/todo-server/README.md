@@ -5,7 +5,7 @@ A real-world example demonstrating a REST API server built with **Javalin** and 
 ## Features
 
 - **Complex Dependencies**: Resolves deep dependency trees (Javalin → Jetty, Slf4j, Jackson, Kotlin Stdlib, etc.)
-- **Web Server**: Runs a lightweight HTTP server on port 7000
+- **Web Server**: Runs a lightweight HTTP server on port 8080
 - **JSON API**: Handles JSON serialization/deserialization automatically
 
 ## Structure
@@ -32,20 +32,32 @@ pt build -v
 ```
 You will see Polytunnel resolving dozens of transitive dependencies (Jetty, Kotlin, etc.) required by Javalin.
 
-### 2. Run
-#### Option A: Run via VS Code (Recommended)
-This is the easiest way to run the application, as Polytunnel generates the necessary classpath configuration for you.
+## Running
 
-1. Generate VS Code configuration files:
-   ```bash
-   pt vscode
-   ```
-2. Open the `todo-server` folder in VS Code.
-3. Open `src/main/java/com/example/todo/TodoApp.java`.
-4. Click **Run** or **Debug** (provided by the "Extension Pack for Java").
+The recommended way to run the server is using **Gradle** (which wraps the build process and handles classpath correctly) or **VS Code**.
 
-#### Option B: Run Manually
-Currently, `pt` does not produce a "fat jar" or a helper script to run easily from the CLI. You must construct the classpath manually pointing to your local Polytunnel cache (usually `~/.polytunnel/cache`), or rely on the IDE.
+### Option 1: Using Gradle (Recommended via Command Line)
+
+We have included a Gradle wrapper. You can build and run the server easily:
+
+For details on how this was set up, see [GRADLE_GUIDE.md](GRADLE_GUIDE.md).
+
+```bash
+# Build
+./gradlew build
+
+# Run
+./gradlew run
+```
+
+### Option 2: Using VS Code
+
+1.  Open this folder (`examples/todo-server`) in VS Code.
+2.  If you haven't already, run `pt vscode` in the `examples/todo-server` directory to generate the configuration files.
+3.  Open `src/main/java/com/example/todo/TodoApp.java`.
+4.  Press `F5` or click "Run".
+
+> **Note on Manual Execution**: Running `java` manually is difficult because you must construct a classpath that includes all JARs in `.polytunnel/cache`. Using `pt`'s cache blindly (e.g. `find .polytunnel/cache ...`) is **not recommended** as it may include conflicting versions of libraries (e.g. SLF4J 1.7 vs 2.0). Gradle or VS Code handles this isolation correctly.
 
 ### 3. Run Tests
 To execute unit tests:
