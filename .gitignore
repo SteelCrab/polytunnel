@@ -14,6 +14,10 @@ target/
 # Gradle
 .gradle/
 build/
+gradlew
+gradlew.bat
+gradle/
+build.gradle
 
 # IDE
 .idea/
@@ -32,3 +36,5 @@ build/
 # Polytunnel
 .polytunnel/
 polytunnel.lock
+
+docs
