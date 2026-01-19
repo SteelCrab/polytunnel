@@ -820,6 +820,7 @@ dependencies = [
 name = "polytunnel-resolver"
 version = "0.1.0"
 dependencies = [
+ "futures",
  "polytunnel-core",
  "polytunnel-maven",
  "semver",
