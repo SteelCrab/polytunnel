@@ -767,7 +767,9 @@ dependencies = [
  "colored",
  "polytunnel-build",
  "polytunnel-core",
+ "tempfile",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
