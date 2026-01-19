@@ -37,4 +37,5 @@ build.gradle
 .polytunnel/
 polytunnel.lock
 
-docs
+# Document
+docs/
