@@ -1,6 +1,7 @@
 //! Classpath management and dependency resolution
 
 use crate::error::{BuildError, Result};
+use futures::future::try_join_all;
 use polytunnel_core::ProjectConfig;
 use polytunnel_maven::Coordinate;
 use std::path::PathBuf;
@@ -91,30 +92,42 @@ impl ClasspathBuilder {
 
         // 3. Download artifacts
         let client = polytunnel_maven::MavenClient::new();
-        let mut jar_paths = std::collections::HashMap::new();
+        // let mut jar_paths = std::collections::HashMap::new(); <-- logic change
+
+        let mut download_futures = Vec::new();
 
         for coord in &resolved_tree.all_dependencies {
-            let file_name = coord.jar_filename();
+            let client = client.clone();
+            let cache_path = cache_path.clone();
+            let coord = coord.clone();
 
-            // Layout: cache_dir/group/id/artifact/id/version/artifact-version.jar
-            // But for simplicity in this phase, let's use the Maven repo layout structure relative to cache_dir
-            let artifact_path = cache_path.join(coord.repo_path()).join(&file_name);
+            download_futures.push(async move {
+                let file_name = coord.jar_filename();
+                // Layout: cache_dir/group/id/artifact/id/version/artifact-version.jar
+                // But for simplicity in this phase, let's use the Maven repo layout structure relative to cache_dir
+                let artifact_path = cache_path.join(coord.repo_path()).join(&file_name);
 
-            if !artifact_path.exists() {
-                // Ensure parent directory exists
-                if let Some(parent) = artifact_path.parent() {
-                    std::fs::create_dir_all(parent)?;
+                if !artifact_path.exists() {
+                    // Ensure parent directory exists
+                    if let Some(parent) = artifact_path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
+
+                    // Download
+                    client
+                        .download_jar(&coord, &artifact_path, verbose)
+                        .await
+                        .map_err(BuildError::from)?;
                 }
 
-                // Download
-                client
-                    .download_jar(coord, &artifact_path, verbose)
-                    .await
-                    .map_err(BuildError::from)?;
-            }
-
-            jar_paths.insert(coord.to_string(), artifact_path);
+                Ok::<_, BuildError>((coord.to_string(), artifact_path))
+            });
         }
+
+        // Wait for all downloads
+        let results = try_join_all(download_futures).await?;
+
+        let jar_paths: std::collections::HashMap<String, PathBuf> = results.into_iter().collect();
 
         // 4. Construct Classpath vectors
         let mut compile_cp = Vec::new();
