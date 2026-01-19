@@ -274,6 +274,11 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
 async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Result<()> {
     let start = Instant::now();
 
+    // Print platform information if verbose
+    if verbose {
+        eprintln!("Build platform: {}", Platform::detect());
+    }
+
     // Load configuration
     let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
     let name = config.project.name.clone();
