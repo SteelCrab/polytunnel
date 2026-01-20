@@ -163,15 +163,16 @@ impl Resolver {
     ) -> BoxFuture<'static, Result<Vec<Coordinate>>> {
         async move {
             let coord = Self::apply_override(&requested_coord, &overrides);
-            let key = coord.to_string();
+            // Use GA (groupId:artifactId) as key for "nearest wins" - first version wins
+            let ga_key = format!("{}:{}", coord.group_id, coord.artifact_id);
 
-            // Check visited
+            // Check visited by GA - only process first encountered version
             {
                 let mut v = visited.lock().unwrap();
-                if v.contains(&key) {
+                if v.contains(&ga_key) {
                     return Ok(Vec::new());
                 }
-                v.insert(key.clone());
+                v.insert(ga_key.clone());
             }
 
             // Fetch POM
