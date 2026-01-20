@@ -28,6 +28,13 @@ impl Resolver {
         }
     }
 
+    pub fn with_client(client: MavenClient) -> Self {
+        Self {
+            client,
+            graph: DependencyGraph::new(),
+        }
+    }
+
     /// Resolve all dependencies starting from root dependencies
     pub async fn resolve(&mut self, deps: &[Coordinate]) -> Result<ResolvedTree> {
         // Build map of overrides from root dependencies (G:A -> Version)
