@@ -9,6 +9,7 @@
 ## Features
 
 - ⚡ **Fast** - Rust-based for speed
+- 🚀 **Parallel** - Concurrent dependency resolution and downloads
 - 🎯 **Simple** - Intuitive CLI and config
 - 🔒 **Reproducible** - Lock file support (planned)
 - 🛠️ **Build** - Direct javac compilation
@@ -186,7 +187,8 @@ cargo fmt --check
 - ✅ **Phase 2a** - Maven Central integration (API client, POM parser)
 - ✅ **Phase 2b** - Build & test engine (javac, test execution)
 - 🚧 **Phase 3** - Dependency management (`add`, `remove`, `sync`, `tree`)
-- ⏳ **Phase 4** - Advanced features (parallel downloads, cache, lock files)
+- ✅ **Phase 3.5** - Parallel dependency resolution and concurrent downloads
+- ⏳ **Phase 4** - Advanced features (cache, lock files)
 
 ## License
 
