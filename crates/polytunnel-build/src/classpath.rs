@@ -1,6 +1,8 @@
 //! Classpath management and dependency resolution
 
 use crate::error::{BuildError, Result};
+use futures::future::try_join_all;
+use indicatif::{ProgressBar, ProgressStyle};
 use polytunnel_core::ProjectConfig;
 use polytunnel_maven::Coordinate;
 use std::path::PathBuf;
@@ -26,20 +28,6 @@ pub struct ClasspathBuilder {
 
 impl ClasspathBuilder {
     /// Create a new classpath builder
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - Project configuration
-    ///
-    /// # Returns
-    ///
-    /// A new ClasspathBuilder instance
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let builder = ClasspathBuilder::new(config);
-    /// ```
     pub fn new(config: ProjectConfig) -> Self {
         Self {
             config,
@@ -52,30 +40,22 @@ impl ClasspathBuilder {
     /// # Arguments
     ///
     /// * `cache_dir` - Directory to cache downloaded JARs
-    /// * `verbose` - Whether to print download progress
     ///
     /// # Returns
     ///
     /// ClasspathResult with separate classpaths for compile, test, and runtime
-    ///
-    /// # Errors
-    ///
-    /// * `BuildError::InvalidDependency` - If dependency format is invalid
-    /// * `BuildError::Io` - If JAR download fails
-    /// * `BuildError::Maven` - If Maven resolution fails
-    /// * `BuildError::Resolver` - If dependency resolution fails
     pub async fn build_classpath(&mut self, cache_dir: &str) -> Result<ClasspathResult> {
+        // Step 1: Prepare cache directory
         let cache_path = PathBuf::from(cache_dir);
         if !cache_path.exists() {
             std::fs::create_dir_all(&cache_path)?;
         }
 
-        // 1. Convert config dependencies to Coordinates
+        // Step 2: Parse root dependencies from polytunnel.toml
         let root_coords = self.get_root_coordinates()?;
 
-        // 2. Resolve dependencies
+        // Step 3: Resolve dependency tree (parallel, includes transitives)
         let mut resolver = polytunnel_resolver::Resolver::new();
-        // Map ResolverError to BuildError
         let resolved_tree = resolver.resolve(&root_coords).await.map_err(|e| match e {
             polytunnel_resolver::ResolverError::Io(e) => BuildError::Io(e),
             polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e),
@@ -85,18 +65,22 @@ impl ClasspathBuilder {
             },
         })?;
 
-        // 3. Collect download targets (check cache first)
+        // Step 4: Collect download targets (check cache)
         let client = polytunnel_maven::MavenClient::new();
-        let mut jar_paths = std::collections::HashMap::new();
         let mut download_tasks: Vec<(Coordinate, PathBuf)> = Vec::new();
+        let mut jar_paths: std::collections::HashMap<String, PathBuf> =
+            std::collections::HashMap::new();
 
         for coord in &resolved_tree.all_dependencies {
-            let file_name = coord.jar_filename();
-            let artifact_path = cache_path.join(coord.repo_path()).join(&file_name);
+            let artifact_path = cache_path
+                .join(coord.repo_path())
+                .join(coord.jar_filename());
 
             if artifact_path.exists() {
+                // Already cached, skip download
                 jar_paths.insert(coord.to_string(), artifact_path);
             } else {
+                // Need to download
                 if let Some(parent) = artifact_path.parent() {
                     std::fs::create_dir_all(parent)?;
                 }
@@ -104,18 +88,13 @@ impl ClasspathBuilder {
             }
         }
 
-        // 4. Download with progress bar (parallel)
+        // Step 5: Parallel download with progress bar
         if !download_tasks.is_empty() {
-            use futures::future::try_join_all;
-            use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-            use std::sync::Arc;
-
             let total = download_tasks.len();
-            let mp = Arc::new(MultiProgress::new());
 
-            // Main progress bar showing overall progress
-            let main_pb = mp.add(ProgressBar::new(total as u64));
-            main_pb.set_style(
+            // Progress bar showing overall progress
+            let pb = ProgressBar::new(total as u64);
+            pb.set_style(
                 ProgressStyle::default_bar()
                     .template("   Downloading [{bar:40.cyan/blue}] {pos}/{len} ({percent}%)")
                     .unwrap()
@@ -126,7 +105,7 @@ impl ClasspathBuilder {
                 .into_iter()
                 .map(|(coord, artifact_path)| {
                     let client = client.clone();
-                    let main_pb = main_pb.clone();
+                    let pb = pb.clone();
 
                     async move {
                         client
@@ -134,7 +113,7 @@ impl ClasspathBuilder {
                             .await
                             .map_err(BuildError::from)?;
 
-                        main_pb.inc(1);
+                        pb.inc(1);
                         Ok::<_, BuildError>((coord.to_string(), artifact_path))
                     }
                 })
@@ -142,35 +121,20 @@ impl ClasspathBuilder {
 
             let downloaded = try_join_all(download_futures).await?;
 
-            main_pb.finish_and_clear();
+            pb.finish_and_clear();
 
             for (key, path) in downloaded {
                 jar_paths.insert(key, path);
             }
         }
 
-        // 4. Construct Classpath vectors
+        // Step 6: Construct Classpath vectors
         let mut compile_cp = Vec::new();
         let mut test_cp = Vec::new();
         let mut runtime_cp = Vec::new();
 
-        // Add resolved dependencies to appropriate classpaths based on scope
-        // Note: The resolver should ideally give us the scope for each resolved dependency.
-        // For now, we'll iterate through the resolved list.
-        // A limitation of the current Resolver::resolve output is it gives a flat list of coordinates without scope info for transitive ones.
-        // However, Maven transitive rules are complex.
-        // For MVP/Phase 3: We will assume transitive dependencies are Scope::Compile unless specified otherwise.
-
-        // Improve: We need to know the scope of each dependency in the resolved tree.
-        // Current Resolver implementation returns simple Coordinate list.
-        // We will assume 'Compile' scope for all transitive dependencies for this iteration,
-        // but respect the root dependency scope for root items.
-
         for coord in &resolved_tree.all_dependencies {
             if let Some(path) = jar_paths.get(&coord.to_string()) {
-                // Determine scope - naïve approach: check if it's a root dep and get its scope
-                // If generic transitive, assume Compile/Runtime
-
                 let scope = self
                     .get_dependency_scope(coord)
                     .unwrap_or(polytunnel_maven::DependencyScope::Compile);
@@ -211,10 +175,7 @@ impl ClasspathBuilder {
         let mut coords = Vec::new();
         for (key, dep) in &self.config.dependencies {
             let coord = Self::parse_coordinate(key)?;
-            // We need to carry the version from the TOML value
             let version = dep.version();
-
-            // Create a new coordinate with the specific version from config
             let full_coord = Coordinate::new(&coord.group_id, &coord.artifact_id, version);
             coords.push(full_coord);
         }
@@ -225,13 +186,11 @@ impl ClasspathBuilder {
         &self,
         coord: &Coordinate,
     ) -> Option<polytunnel_maven::DependencyScope> {
-        // Find if this coordinate matches any root dependency key
         for (key, dep) in &self.config.dependencies {
             if let Ok(root_coord) = Self::parse_coordinate(key)
                 && root_coord.group_id == coord.group_id
                 && root_coord.artifact_id == coord.artifact_id
             {
-                // Map ProjectConfig scope (polytunnel_core::DependencyScope) to Maven scope
                 let core_scope = dep.scope();
                 return Some(match core_scope {
                     polytunnel_core::DependencyScope::Compile => {
@@ -253,20 +212,6 @@ impl ClasspathBuilder {
     }
 
     /// Get the cached classpath result
-    ///
-    /// # Returns
-    ///
-    /// The cached ClasspathResult from the last build_classpath call
-    ///
-    /// # Panics
-    ///
-    /// Panics if build_classpath has not been called yet
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let classpaths = builder.get_cached_classpath();
-    /// ```
     pub fn get_cached_classpath(&self) -> ClasspathResult {
         self.cached_result
             .clone()
@@ -286,8 +231,6 @@ impl ClasspathBuilder {
             });
         }
 
-        // For now, parse simple format
-        // Full implementation will handle more complex cases
         Ok(Coordinate::new(
             parts[0],
             parts[1],
@@ -296,10 +239,6 @@ impl ClasspathBuilder {
     }
 
     /// Format classpath for command line (helper for tests)
-    ///
-    /// Uses OS-specific path separator:
-    /// - Windows (all architectures): `;`
-    /// - Unix/Linux/macOS (all architectures): `:`
     #[allow(dead_code)]
     fn format_classpath(paths: &[PathBuf]) -> String {
         let separator = if cfg!(windows) { ";" } else { ":" };
