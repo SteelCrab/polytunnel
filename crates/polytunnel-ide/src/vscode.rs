@@ -13,7 +13,7 @@ pub async fn generate(config: &ProjectConfig, root_path: &Path) -> Result<()> {
     let mut orchestrator = BuildOrchestrator::new(config.clone()).map_err(IdeError::Build)?;
     print_status("Resolving", "dependencies...", Color::Cyan);
     orchestrator
-        .resolve_dependencies(false)
+        .resolve_dependencies()
         .await
         .map_err(IdeError::Build)?;
 

@@ -10,6 +10,7 @@ const MAVEN_CENTRAL_URL: &str = "https://repo1.maven.org/maven2";
 const MAVEN_SEARCH_URL: &str = "https://search.maven.org/solrsearch/select";
 
 /// Maven Central HTTP client
+#[derive(Clone)]
 pub struct MavenClient {
     http: Client,
     base_url: String,

@@ -64,11 +64,7 @@ impl ClasspathBuilder {
     /// * `BuildError::Io` - If JAR download fails
     /// * `BuildError::Maven` - If Maven resolution fails
     /// * `BuildError::Resolver` - If dependency resolution fails
-    pub async fn build_classpath(
-        &mut self,
-        cache_dir: &str,
-        verbose: bool,
-    ) -> Result<ClasspathResult> {
+    pub async fn build_classpath(&mut self, cache_dir: &str) -> Result<ClasspathResult> {
         let cache_path = PathBuf::from(cache_dir);
         if !cache_path.exists() {
             std::fs::create_dir_all(&cache_path)?;
@@ -82,38 +78,75 @@ impl ClasspathBuilder {
         // Map ResolverError to BuildError
         let resolved_tree = resolver.resolve(&root_coords).await.map_err(|e| match e {
             polytunnel_resolver::ResolverError::Io(e) => BuildError::Io(e),
-            polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e), // Uses From<MavenError> for BuildError
+            polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e),
             polytunnel_resolver::ResolverError::Config(e) => BuildError::Core(e),
             _ => BuildError::CompilationFailed {
                 message: e.to_string(),
-            }, // Fallback for other resolver errors
+            },
         })?;
 
-        // 3. Download artifacts
+        // 3. Collect download targets (check cache first)
         let client = polytunnel_maven::MavenClient::new();
         let mut jar_paths = std::collections::HashMap::new();
+        let mut download_tasks: Vec<(Coordinate, PathBuf)> = Vec::new();
 
         for coord in &resolved_tree.all_dependencies {
             let file_name = coord.jar_filename();
-
-            // Layout: cache_dir/group/id/artifact/id/version/artifact-version.jar
-            // But for simplicity in this phase, let's use the Maven repo layout structure relative to cache_dir
             let artifact_path = cache_path.join(coord.repo_path()).join(&file_name);
 
-            if !artifact_path.exists() {
-                // Ensure parent directory exists
+            if artifact_path.exists() {
+                jar_paths.insert(coord.to_string(), artifact_path);
+            } else {
                 if let Some(parent) = artifact_path.parent() {
                     std::fs::create_dir_all(parent)?;
                 }
-
-                // Download
-                client
-                    .download_jar(coord, &artifact_path, verbose)
-                    .await
-                    .map_err(BuildError::from)?;
+                download_tasks.push((coord.clone(), artifact_path));
             }
+        }
 
-            jar_paths.insert(coord.to_string(), artifact_path);
+        // 4. Download with progress bar (parallel)
+        if !download_tasks.is_empty() {
+            use futures::future::try_join_all;
+            use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+            use std::sync::Arc;
+
+            let total = download_tasks.len();
+            let mp = Arc::new(MultiProgress::new());
+
+            // Main progress bar showing overall progress
+            let main_pb = mp.add(ProgressBar::new(total as u64));
+            main_pb.set_style(
+                ProgressStyle::default_bar()
+                    .template("   Downloading [{bar:40.cyan/blue}] {pos}/{len} ({percent}%)")
+                    .unwrap()
+                    .progress_chars("=>-"),
+            );
+
+            let download_futures: Vec<_> = download_tasks
+                .into_iter()
+                .map(|(coord, artifact_path)| {
+                    let client = client.clone();
+                    let main_pb = main_pb.clone();
+
+                    async move {
+                        client
+                            .download_jar(&coord, &artifact_path, false)
+                            .await
+                            .map_err(BuildError::from)?;
+
+                        main_pb.inc(1);
+                        Ok::<_, BuildError>((coord.to_string(), artifact_path))
+                    }
+                })
+                .collect();
+
+            let downloaded = try_join_all(download_futures).await?;
+
+            main_pb.finish_and_clear();
+
+            for (key, path) in downloaded {
+                jar_paths.insert(key, path);
+            }
         }
 
         // 4. Construct Classpath vectors
