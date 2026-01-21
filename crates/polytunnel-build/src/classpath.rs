@@ -1,6 +1,7 @@
 //! Classpath management and dependency resolution
 
 use crate::error::{BuildError, Result};
+use futures::future::try_join_all;
 use polytunnel_core::ProjectConfig;
 use polytunnel_maven::Coordinate;
 use std::path::PathBuf;
@@ -69,51 +70,63 @@ impl ClasspathBuilder {
         cache_dir: &str,
         verbose: bool,
     ) -> Result<ClasspathResult> {
+        // Step 1: Prepare cache directory
         let cache_path = PathBuf::from(cache_dir);
         if !cache_path.exists() {
             std::fs::create_dir_all(&cache_path)?;
         }
 
-        // 1. Convert config dependencies to Coordinates
+        // Step 2: Parse root dependencies from polytunnel.toml
         let root_coords = self.get_root_coordinates()?;
 
-        // 2. Resolve dependencies
+        // Step 3: Resolve dependency tree (parallel, includes transitives)
         let mut resolver = polytunnel_resolver::Resolver::new();
-        // Map ResolverError to BuildError
-        let resolved_tree = resolver.resolve(&root_coords).await.map_err(|e| match e {
-            polytunnel_resolver::ResolverError::Io(e) => BuildError::Io(e),
-            polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e), // Uses From<MavenError> for BuildError
-            polytunnel_resolver::ResolverError::Config(e) => BuildError::Core(e),
-            _ => BuildError::CompilationFailed {
-                message: e.to_string(),
-            }, // Fallback for other resolver errors
-        })?;
+        let resolved_tree = resolver.resolve(&root_coords).await?;
 
-        // 3. Download artifacts
+        // Step 4: Collect download targets (check cache)
         let client = polytunnel_maven::MavenClient::new();
-        let mut jar_paths = std::collections::HashMap::new();
+        let mut download_tasks: Vec<(Coordinate, PathBuf)> = Vec::new();
+        let mut jar_paths: std::collections::HashMap<String, PathBuf> =
+            std::collections::HashMap::new();
 
         for coord in &resolved_tree.all_dependencies {
-            let file_name = coord.jar_filename();
+            let artifact_path = cache_path
+                .join(coord.repo_path())
+                .join(coord.jar_filename());
 
-            // Layout: cache_dir/group/id/artifact/id/version/artifact-version.jar
-            // But for simplicity in this phase, let's use the Maven repo layout structure relative to cache_dir
-            let artifact_path = cache_path.join(coord.repo_path()).join(&file_name);
-
-            if !artifact_path.exists() {
-                // Ensure parent directory exists
+            if artifact_path.exists() {
+                // Already cached, skip download
+                jar_paths.insert(coord.to_string(), artifact_path);
+            } else {
+                // Need to download
                 if let Some(parent) = artifact_path.parent() {
                     std::fs::create_dir_all(parent)?;
                 }
-
-                // Download
-                client
-                    .download_jar(coord, &artifact_path, verbose)
-                    .await
-                    .map_err(BuildError::from)?;
+                download_tasks.push((coord.clone(), artifact_path));
             }
+        }
 
-            jar_paths.insert(coord.to_string(), artifact_path);
+        // Step 5: Parallel download (core optimization)
+        let download_futures: Vec<_> = download_tasks
+            .into_iter()
+            .map(|(coord, path)| {
+                let client = client.clone();
+                async move {
+                    client
+                        .download_jar(&coord, &path, verbose)
+                        .await
+                        .map_err(BuildError::from)?;
+                    Ok::<_, BuildError>((coord.to_string(), path))
+                }
+            })
+            .collect();
+
+        // Execute all downloads concurrently
+        let downloaded = try_join_all(download_futures).await?;
+
+        // Merge downloaded paths into jar_paths
+        for (key, path) in downloaded {
+            jar_paths.insert(key, path);
         }
 
         // 4. Construct Classpath vectors

@@ -268,6 +268,19 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
         }
     }
 
+    let total_duration = start.elapsed();
+    let duration_str = if total_duration.as_secs() > 0 {
+        format!("{}s", total_duration.as_secs())
+    } else {
+        format!("{}ms", total_duration.as_millis())
+    };
+
+    println!(
+        "\n{} in {}\n",
+        "BUILD SUCCESSFUL".green().bold(),
+        duration_str
+    );
+
     Ok(())
 }
 
