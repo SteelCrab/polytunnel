@@ -64,9 +64,7 @@ impl ClasspathBuilder {
             polytunnel_resolver::ResolverError::Io(e) => BuildError::Io(e),
             polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e),
             polytunnel_resolver::ResolverError::Config(e) => BuildError::Core(e),
-            _ => BuildError::CompilationFailed {
-                message: e.to_string(),
-            },
+            e => BuildError::Resolver(e),
         })?;
 
         // Step 4: Collect download targets (check cache)
