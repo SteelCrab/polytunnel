@@ -16,6 +16,7 @@ thiserror.workspace = true
 
 walkdir = "2.4"
 sha2 = "0.10"
+indicatif.workspace = true
 futures.workspace = true
 
 [dev-dependencies]
