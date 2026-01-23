@@ -74,6 +74,7 @@ jobs:
         run: cargo build --workspace --verbose
 
   # Job 3: Build on macOS aarch64 (Apple Silicon)
+  # No need to add aarch64 target - it's the native architecture
   build-macos-aarch64:
     name: Build (macOS aarch64)
     runs-on: macos-latest
@@ -84,18 +85,14 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # Add aarch64 target for Apple Silicon
-      - name: Add aarch64 target
-        run: rustup target add aarch64-apple-darwin
-
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
           key: macos-aarch64
 
-      # Build for Apple Silicon
+      # Build for Apple Silicon (native)
       - name: Build workspace (aarch64)
-        run: cargo build --workspace --target aarch64-apple-darwin --verbose
+        run: cargo build --workspace --verbose
 
   # Job 4: Build on Windows x86_64
   build-windows-x86:
@@ -172,7 +169,7 @@ jobs:
       - name: Build workspace (musl)
         run: cargo build --workspace --target x86_64-unknown-linux-musl --verbose
 
-  # Job 6: Run all unit tests (Linux only)
+  # Job 7: Run all unit tests (Linux only)
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -211,7 +208,7 @@ jobs:
       # Run Clippy with strict warnings (-D warnings)
       # This will fail the build if there are any warnings
       - name: Run Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   # Job 8: Code formatting check
   fmt:
