@@ -44,7 +44,11 @@ impl ClasspathBuilder {
     /// # Returns
     ///
     /// ClasspathResult with separate classpaths for compile, test, and runtime
-    pub async fn build_classpath(&mut self, cache_dir: &str) -> Result<ClasspathResult> {
+    pub async fn build_classpath(
+        &mut self,
+        cache_dir: &str,
+        verbose: bool,
+    ) -> Result<ClasspathResult> {
         // Step 1: Prepare cache directory
         let cache_path = PathBuf::from(cache_dir);
         if !cache_path.exists() {
@@ -100,6 +104,13 @@ impl ClasspathBuilder {
                     .unwrap()
                     .progress_chars("=>-"),
             );
+
+            // Print package names in verbose mode before starting parallel downloads
+            if verbose {
+                for (coord, _) in &download_tasks {
+                    pb.println(format!("   Downloading {}", coord));
+                }
+            }
 
             let download_futures: Vec<_> = download_tasks
                 .into_iter()

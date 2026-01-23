@@ -184,7 +184,7 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
     // Cargo prints "Compiling" immediately mostly.
     // But let's print "Resolving" as it involves network.
     print_status("Resolving", "dependencies", Color::Cyan);
-    orchestrator.resolve_dependencies().await?;
+    orchestrator.resolve_dependencies(verbose).await?;
 
     // 2. Compile Main
     print_status("Compiling", &format!("{} v{}", name, version), Color::Green);

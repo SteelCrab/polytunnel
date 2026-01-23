@@ -120,7 +120,7 @@ impl BuildOrchestrator {
         if options.verbose {
             println!("Resolving dependencies...");
         }
-        self.resolve_dependencies().await?;
+        self.resolve_dependencies(options.verbose).await?;
 
         // 2. Clean if requested
         if options.clean {
@@ -166,9 +166,9 @@ impl BuildOrchestrator {
     }
 
     /// Resolve dependencies
-    pub async fn resolve_dependencies(&mut self) -> Result<()> {
+    pub async fn resolve_dependencies(&mut self, verbose: bool) -> Result<()> {
         self.classpath_builder
-            .build_classpath(&self.config.build.cache_dir)
+            .build_classpath(&self.config.build.cache_dir, verbose)
             .await
             .map(|_| ())
     }
