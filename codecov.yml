@@ -1,18 +1,26 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecovyml-reference
+
 coverage:
   status:
+    # Overall project coverage settings
     project:
       default:
-        target: 30
-        threshold: 1
+        target: 40%        # Minimum 40% overall coverage required
+        threshold: 2%      # Allow 2% drop from base
         base: auto
+    
+    # Patch coverage (new/modified code only)
     patch:
       default:
-        target: 30
-        threshold: 1
+        target: 80%        # New code must have 80% coverage
+        threshold: 0%      # No tolerance for new code
+    
+    # Changes coverage
     changes:
       default:
-        target: 30
-        threshold: 1
+        target: 40%
+        threshold: 1%
 
 parsers:
   gcov:
@@ -21,3 +29,15 @@ parsers:
       loop: yes
       method: no
       macro: no
+
+# Ignore patterns for coverage
+ignore:
+  - "target/**"
+  - "**/tests/**"
+  - "examples/**"
+
+# Comment settings for PR
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true

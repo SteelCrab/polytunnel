@@ -309,9 +309,10 @@ jobs:
         run: cargo llvm-cov --workspace --lcov --output-path lcov.info
 
       # Upload coverage to codecov
+      # Thresholds configured in codecov.yml (40% project, 80% patch)
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./lcov.info
-          fail_ci_if_error: false
+          fail_ci_if_error: true  # Enforce coverage thresholds
