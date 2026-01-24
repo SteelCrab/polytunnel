@@ -14,6 +14,7 @@ const MAVEN_SEARCH_URL: &str = "https://search.maven.org/solrsearch/select";
 pub struct MavenClient {
     http: Client,
     base_url: String,
+    search_url: String,
 }
 
 /// Search result from Maven Central
@@ -45,6 +46,7 @@ impl MavenClient {
         Self {
             http: Client::new(),
             base_url: MAVEN_CENTRAL_URL.to_string(),
+            search_url: MAVEN_SEARCH_URL.to_string(),
         }
     }
 
@@ -52,14 +54,27 @@ impl MavenClient {
         Self {
             http: Client::new(),
             base_url: base_url.to_string(),
+            search_url: MAVEN_SEARCH_URL.to_string(),
         }
+    }
+
+    pub fn with_search_url(mut self, search_url: &str) -> Self {
+        self.search_url = search_url.to_string();
+        self
     }
 
     /// Search artifacts by query
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
-        let url = format!("{}?q={}&rows={}&wt=json", MAVEN_SEARCH_URL, query, limit);
+        let url = format!("{}?q={}&rows={}&wt=json", self.search_url, query, limit);
 
-        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
+        let response: SearchResponse = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
         Ok(response.response.docs)
     }
@@ -73,7 +88,14 @@ impl MavenClient {
             coord.pom_filename()
         );
 
-        let content = self.http.get(&url).send().await?.text().await?;
+        let content = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .text()
+            .await?;
 
         Ok(content)
     }
@@ -89,11 +111,18 @@ impl MavenClient {
         let query = format!("g:\"{}\" AND a:\"{}\"", group_id, artifact_id);
         let url = format!(
             "{}?q={}&core=gav&rows=100&wt=json",
-            MAVEN_SEARCH_URL,
+            self.search_url,
             urlencoding::encode(&query)
         );
 
-        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
+        let response: SearchResponse = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
         let versions: Vec<String> = response
             .response
@@ -128,7 +157,14 @@ impl MavenClient {
             println!("   Downloading {}", coord);
         }
 
-        let bytes = self.http.get(&url).send().await?.bytes().await?;
+        let bytes = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?;
 
         std::fs::write(dest, bytes)?;
         Ok(())
