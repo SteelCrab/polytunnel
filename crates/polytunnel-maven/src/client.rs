@@ -59,7 +59,14 @@ impl MavenClient {
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
         let url = format!("{}?q={}&rows={}&wt=json", MAVEN_SEARCH_URL, query, limit);
 
-        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
+        let response: SearchResponse = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
         Ok(response.response.docs)
     }
@@ -73,7 +80,14 @@ impl MavenClient {
             coord.pom_filename()
         );
 
-        let content = self.http.get(&url).send().await?.text().await?;
+        let content = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .text()
+            .await?;
 
         Ok(content)
     }
@@ -93,7 +107,14 @@ impl MavenClient {
             urlencoding::encode(&query)
         );
 
-        let response: SearchResponse = self.http.get(&url).send().await?.json().await?;
+        let response: SearchResponse = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
         let versions: Vec<String> = response
             .response
@@ -128,7 +149,14 @@ impl MavenClient {
             println!("   Downloading {}", coord);
         }
 
-        let bytes = self.http.get(&url).send().await?.bytes().await?;
+        let bytes = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?;
 
         std::fs::write(dest, bytes)?;
         Ok(())
