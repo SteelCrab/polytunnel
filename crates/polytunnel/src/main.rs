@@ -1,13 +1,11 @@
 use clap::{Parser, Subcommand};
+use color_eyre::eyre::Result;
 use polytunnel_build::{BuildError, BuildOrchestrator, TestOptions};
 use polytunnel_core::ProjectConfig;
 use std::path::Path;
 use std::time::Instant;
-
 mod platform;
 use platform::Platform;
-
-type Result<T> = std::result::Result<T, BuildError>;
 
 #[derive(Parser)]
 #[command(name = "pt")]
@@ -81,6 +79,7 @@ fn print_status(status: &str, message: &str, color: Color) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
     let cli = Cli::parse();
 
     match cli.command {
@@ -264,7 +263,8 @@ async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<()> {
         if test_result.failed > 0 {
             return Err(BuildError::TestExecutionFailed {
                 message: format!("{} test(s) failed", test_result.failed),
-            });
+            }
+            .into());
         }
     }
 
@@ -337,7 +337,8 @@ async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -> Re
     if result.failed > 0 {
         return Err(BuildError::TestExecutionFailed {
             message: format!("{} test(s) failed", result.failed),
-        });
+        }
+        .into());
     }
 
     Ok(())
