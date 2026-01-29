@@ -9,6 +9,9 @@ use std::time::Instant;
 
 use crate::platform::Platform;
 
+#[cfg(test)]
+mod tests;
+
 /// Helper for formatted status output
 pub fn print_status(status: &str, message: &str, color: Color) {
     println!("{:>12} {}", status.color(color).bold(), message);
@@ -254,44 +257,4 @@ pub async fn cmd_vscode() -> Result<()> {
         })?;
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_init_creates_config() -> Result<()> {
-        let dir = tempdir()?;
-        let config_path = dir.path().join("polytunnel.toml");
-
-        do_init("test-project", &config_path)?;
-
-        assert!(config_path.exists());
-        let content = fs::read_to_string(&config_path)?;
-        assert!(content.contains("name = \"test-project\""));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_init_ignores_existing() -> Result<()> {
-        let dir = tempdir()?;
-        let config_path = dir.path().join("polytunnel.toml");
-
-        // Create initial config
-        do_init("initial-project", &config_path)?;
-
-        // Try to init again
-        do_init("new-project", &config_path)?;
-
-        // Verify content hasn't changed
-        let content = fs::read_to_string(&config_path)?;
-        assert!(content.contains("name = \"initial-project\""));
-        assert!(!content.contains("name = \"new-project\""));
-
-        Ok(())
-    }
 }
