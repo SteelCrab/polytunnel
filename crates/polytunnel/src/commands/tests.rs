@@ -34,3 +34,37 @@ fn test_init_ignores_existing() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_cmd_init_public_api() -> Result<()> {
+    // We need to lock this test because it changes the global CWD,
+    // which could affect other tests if run in parallel.
+    // Since we can't easily share a lock across test threads without lazy_static/std::sync::OnceLock
+    // and we don't want to enforce serial execution on everything,
+    // we assume this test is running in an environment where temporary CWD switches are tolerable
+    // or we implement a simple local lock if possible.
+    // Ideally we would run this test serially via `cargo test -- --test-threads=1` but we can't force that here.
+    // Instead, we rely on the fact that other tests use absolute paths from `tempdir()`.
+
+    static CWD_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _lock = CWD_LOCK.lock().unwrap_or_else(|p| p.into_inner());
+
+    let dir = tempdir()?;
+    let original_dir = std::env::current_dir()?;
+
+    // Change CWD
+    std::env::set_current_dir(&dir)?;
+
+    // Run the command
+    let result = std::panic::catch_unwind(|| cmd_init("test-public-api"));
+
+    // Restore CWD regardless of result
+    std::env::set_current_dir(&original_dir)?;
+
+    // Check result
+    result.map_err(|e| color_eyre::eyre::eyre!("Test panicked: {:?}", e))??;
+
+    // Verify
+    assert!(dir.path().join("polytunnel.toml").exists());
+    Ok(())
+}
