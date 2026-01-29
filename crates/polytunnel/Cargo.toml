@@ -16,3 +16,5 @@ clap.workspace = true
 tokio.workspace = true
 colored = "2.1"
 color-eyre = "0.6.5"
+[dev-dependencies]
+tempfile = "3.10"

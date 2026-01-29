@@ -15,8 +15,10 @@ pub fn print_status(status: &str, message: &str, color: Color) {
 }
 
 pub fn cmd_init(name: &str) -> Result<()> {
-    let config_path = Path::new("polytunnel.toml");
+    do_init(name, Path::new("polytunnel.toml"))
+}
 
+fn do_init(name: &str, config_path: &Path) -> Result<()> {
     if config_path.exists() {
         print_status("Ignored", "polytunnel.toml already exists", Color::Yellow);
         return Ok(());
@@ -252,4 +254,44 @@ pub async fn cmd_vscode() -> Result<()> {
         })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_init_creates_config() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("polytunnel.toml");
+
+        do_init("test-project", &config_path)?;
+
+        assert!(config_path.exists());
+        let content = fs::read_to_string(&config_path)?;
+        assert!(content.contains("name = \"test-project\""));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_init_ignores_existing() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("polytunnel.toml");
+
+        // Create initial config
+        do_init("initial-project", &config_path)?;
+
+        // Try to init again
+        do_init("new-project", &config_path)?;
+
+        // Verify content hasn't changed
+        let content = fs::read_to_string(&config_path)?;
+        assert!(content.contains("name = \"initial-project\""));
+        assert!(!content.contains("name = \"new-project\""));
+
+        Ok(())
+    }
 }
