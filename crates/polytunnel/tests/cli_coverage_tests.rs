@@ -7,7 +7,7 @@ fn test_init_creates_config() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempdir()?;
     let config_path = dir.path().join("polytunnel.toml");
 
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.current_dir(dir.path())
         .arg("init")
         .arg("test-project")
@@ -27,7 +27,7 @@ fn test_init_ignores_existing() -> Result<(), Box<dyn std::error::Error>> {
     let config_path = dir.path().join("polytunnel.toml");
 
     // Create initial config
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.current_dir(dir.path())
         .arg("init")
         .arg("initial-project")
@@ -35,7 +35,7 @@ fn test_init_ignores_existing() -> Result<(), Box<dyn std::error::Error>> {
         .success();
 
     // Try to init again
-    let mut cmd2 = Command::cargo_bin("pt")?;
+    let mut cmd2 = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd2.current_dir(dir.path())
         .arg("init")
         .arg("new-project")
@@ -52,7 +52,7 @@ fn test_init_ignores_existing() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_add_command_runs() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.arg("add")
         .arg("com.example:lib:1.0.0")
         .assert()
@@ -63,7 +63,7 @@ fn test_add_command_runs() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_remove_command_runs() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.arg("remove")
         .arg("com.example:lib")
         .assert()
@@ -74,7 +74,7 @@ fn test_remove_command_runs() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_sync_command_runs() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.arg("sync")
         .assert()
         .success()
@@ -84,7 +84,7 @@ fn test_sync_command_runs() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_tree_command_runs() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("pt")?;
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
     cmd.arg("tree")
         .assert()
         .success()
