@@ -86,7 +86,7 @@ pub async fn cmd_build(clean: bool, skip_tests: bool, verbose: bool) -> Result<(
 
     // 0. Clean (if requested)
     if clean {
-        // TODO: Implement clean in orchestrator public API or similar
+        orchestrator.clean()?;
     }
 
     // 1. Resolve Dependencies

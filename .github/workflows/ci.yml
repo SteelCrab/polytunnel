@@ -306,7 +306,7 @@ jobs:
 
       # Generate code coverage report
       - name: Generate code coverage
-        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --fail-under-lines 85 --lcov --output-path lcov.info
 
       # Upload coverage to codecov
       - name: Upload coverage reports to Codecov
