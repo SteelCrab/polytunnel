@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: polytunnel-pre-commit
+        name: Polytunnel pre-commit checks
+        entry: .githooks/pre-commit
+        language: script
+        pass_filenames: false
