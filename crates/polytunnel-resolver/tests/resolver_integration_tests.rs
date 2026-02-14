@@ -1,173 +1,396 @@
-//! Integration tests for dependency resolution
-//!
-//! Coverage: Validates the dependency resolution algorithm, transitive dependency handling, and graph construction.
+//! Integration tests for dependency resolution using a deterministic transport.
 
-use polytunnel_maven::Coordinate;
+use polytunnel_maven::{
+    Coordinate, HttpResponse, HttpTransportFuture, MavenClient, MavenTransport,
+};
+use polytunnel_resolver::Resolver;
+use std::collections::HashMap;
+use std::sync::Arc;
 
-#[test]
-fn test_coordinate_parsing_for_resolution() {
-    let coord = Coordinate::parse("org.junit.jupiter:junit-jupiter-api:5.10.0").unwrap();
-
-    assert_eq!(coord.group_id, "org.junit.jupiter");
-    assert_eq!(coord.artifact_id, "junit-jupiter-api");
-    assert_eq!(coord.version, "5.10.0");
+#[derive(Clone)]
+struct MockTransport {
+    routes: HashMap<String, (u16, Vec<u8>)>,
 }
 
-#[test]
-fn test_dependency_chain_junit5() {
-    // JUnit 5 dependency chain
-    let deps = vec![
-        "org.junit.jupiter:junit-jupiter:5.10.0",
-        "org.junit.platform:junit-platform-console:1.10.0",
-        "org.opentest4j:opentest4j:1.3.0",
-    ];
+impl MockTransport {
+    fn new(routes: Vec<(String, u16, String)>) -> Self {
+        let routes = routes
+            .into_iter()
+            .map(|(path, status, body)| (path, (status, body.into_bytes())))
+            .collect();
 
-    for dep_str in deps {
-        let coord = Coordinate::parse(dep_str);
-        assert!(coord.is_ok());
+        Self { routes }
     }
 }
 
-#[test]
-fn test_dependency_chain_guava() {
-    // Guava dependency
-    let coord = Coordinate::parse("com.google.guava:guava:33.0.0-jre").unwrap();
+impl MavenTransport for MockTransport {
+    fn get(&self, url: String) -> HttpTransportFuture {
+        let response = self
+            .routes
+            .get(&url)
+            .cloned()
+            .unwrap_or((404, b"not found".to_vec()));
 
-    assert_eq!(coord.group_id, "com.google.guava");
-    assert_eq!(coord.artifact_id, "guava");
-}
-
-#[test]
-fn test_dependency_chain_mockito() {
-    // Mockito dependencies
-    let deps = vec![
-        "org.mockito:mockito-core:5.2.1",
-        "net.bytebuddy:byte-buddy:1.14.10",
-        "net.bytebuddy:byte-buddy-agent:1.14.10",
-    ];
-
-    for dep_str in deps {
-        let coord = Coordinate::parse(dep_str);
-        assert!(coord.is_ok());
+        Box::pin(async move {
+            Ok(HttpResponse {
+                status: response.0,
+                body: response.1,
+            })
+        })
     }
 }
 
-#[test]
-fn test_transitive_dependency_resolution() {
-    // A depends on B, B depends on C
-    let a = Coordinate::parse("org.app:app:1.0.0").unwrap();
-    let b = Coordinate::parse("org.lib:lib-b:2.0.0").unwrap();
-    let c = Coordinate::parse("org.lib:lib-c:3.0.0").unwrap();
+fn transitive_routes(base_url: &str) -> Vec<(String, u16, String)> {
+    vec![
+        (
+            format!("{base_url}/org/app/app/1.0.0/app-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.app</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>core-lib</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.tests</groupId>
+      <artifactId>ignored-test-lib</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.unavailable</groupId>
+      <artifactId>missing-lib</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/com/example/core-lib/1.0.0/core-lib-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>core-lib</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.9</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-api</artifactId>
+  <version>2.0.9</version>
+</project>
+"#
+            .to_string(),
+        ),
+    ]
+}
 
-    assert_eq!(a.group_id, "org.app");
-    assert_eq!(b.group_id, "org.lib");
-    assert_eq!(c.group_id, "org.lib");
+fn override_routes(base_url: &str) -> Vec<(String, u16, String)> {
+    vec![
+        (
+            format!("{base_url}/org/app/root/9.9.9/root-9.9.9.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.app</groupId>
+  <artifactId>root</artifactId>
+  <version>9.9.9</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.lib</groupId>
+      <artifactId>lib</artifactId>
+      <version>2.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/lib/lib/2.0.0/lib-2.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.lib</groupId>
+  <artifactId>lib</artifactId>
+  <version>2.0.0</version>
+</project>
+"#
+            .to_string(),
+        ),
+    ]
+}
+
+fn chain_routes(base_url: &str) -> Vec<(String, u16, String)> {
+    vec![
+        (
+            format!("{base_url}/org/one/root/1.0.0/root-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.one</groupId>
+  <artifactId>root</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.two</groupId>
+      <artifactId>middle</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/two/middle/1.0.0/middle-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.two</groupId>
+  <artifactId>middle</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.three</groupId>
+      <artifactId>leaf</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/three/leaf/1.0.0/leaf-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.three</groupId>
+  <artifactId>leaf</artifactId>
+  <version>1.0.0</version>
+</project>
+"#
+            .to_string(),
+        ),
+    ]
+}
+
+fn resilient_routes(base_url: &str) -> Vec<(String, u16, String)> {
+    vec![
+        (
+            format!("{base_url}/org/faulty/root/1.0.0/root-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.faulty</groupId>
+  <artifactId>root</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.good</groupId>
+      <artifactId>with-missing-parent</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bad</groupId>
+      <artifactId>missing</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/good/with-missing-parent/1.0.0/with-missing-parent-1.0.0.pom"),
+            200,
+            r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.good</groupId>
+  <artifactId>with-missing-parent</artifactId>
+  <version>1.0.0</version>
+  <parent>
+    <groupId>org.missing</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>org.good</groupId>
+      <artifactId>missing-transitive</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
+"#
+            .to_string(),
+        ),
+    ]
 }
 
 #[test]
-fn test_dependency_scope_compile() {
-    let coord = Coordinate::parse("org.junit.jupiter:junit-jupiter-api:5.10.0").unwrap();
-    // Compile scope (default)
-    assert!(!coord.artifact_id.is_empty());
+fn test_resolver_new_uses_default_client() {
+    let resolver = Resolver::new();
+    assert_eq!(resolver.graph.nodes().count(), 0);
 }
 
-#[test]
-fn test_dependency_scope_test() {
-    let coord = Coordinate::parse("junit:junit:4.13.2").unwrap();
-    // Test scope
-    assert!(!coord.artifact_id.is_empty());
+#[tokio::test]
+async fn test_resolve_transitive_dependencies_with_graph() {
+    let base_url = "https://repo.example.test";
+    let mut resolver = Resolver::with_client(MavenClient::with_transport(
+        base_url,
+        Arc::new(MockTransport::new(transitive_routes(base_url))),
+    ));
+    let root = Coordinate::parse("org.app:app:1.0.0").unwrap();
+    let tree = resolver
+        .resolve(&[root])
+        .await
+        .expect("resolver should succeed");
+
+    let mut coords: Vec<_> = tree
+        .all_dependencies
+        .into_iter()
+        .map(|coord| coord.to_string())
+        .collect();
+    coords.sort();
+
+    assert!(coords.contains(&"org.app:app:1.0.0".to_string()));
+    assert!(coords.contains(&"com.example:core-lib:1.0.0".to_string()));
+    assert!(coords.contains(&"org.slf4j:slf4j-api:2.0.9".to_string()));
+    assert!(!coords.contains(&"org.tests:ignored-test-lib:2.0.0".to_string()));
+
+    assert!(resolver.graph.get("org.app:app:1.0.0").is_some());
+    assert!(resolver.graph.get("com.example:core-lib:1.0.0").is_some());
+    assert!(resolver.graph.get("org.slf4j:slf4j-api:2.0.9").is_some());
 }
 
-#[test]
-fn test_dependency_optional_flag() {
-    let coord = Coordinate::parse("com.example:optional-lib:1.0.0").unwrap();
-    assert_eq!(coord.artifact_id, "optional-lib");
-}
-
-#[test]
-fn test_complex_dependency_tree() {
+#[tokio::test]
+async fn test_resolve_applies_root_overrides() {
+    let base_url = "https://repo.example.test";
+    let mut resolver = Resolver::with_client(MavenClient::with_transport(
+        base_url,
+        Arc::new(MockTransport::new(override_routes(base_url))),
+    ));
     let root = Coordinate::parse("org.app:root:1.0.0").unwrap();
-    let deps = vec![
-        "org.junit.jupiter:junit-jupiter:5.10.0",
-        "org.mockito:mockito-core:5.2.1",
-        "com.google.guava:guava:33.0.0-jre",
+    let override_root = Coordinate::parse("org.app:root:9.9.9").unwrap();
+    let tree = resolver
+        .resolve(&[root, override_root])
+        .await
+        .expect("resolver should apply root override");
+
+    let app_versions: Vec<_> = tree
+        .all_dependencies
+        .into_iter()
+        .filter(|coord| coord.group_id == "org.app" && coord.artifact_id == "root")
+        .map(|coord| coord.version)
+        .collect();
+
+    assert_eq!(app_versions, vec!["9.9.9".to_string()]);
+    assert!(resolver.graph.get("org.app:root:9.9.9").is_some());
+}
+
+#[tokio::test]
+async fn test_dependency_graph_tracks_direct_and_transitive_nodes() {
+    let base_url = "https://repo.example.test";
+    let mut resolver = Resolver::with_client(MavenClient::with_transport(
+        base_url,
+        Arc::new(MockTransport::new(chain_routes(base_url))),
+    ));
+    let root = Coordinate::parse("org.one:root:1.0.0").unwrap();
+    let tree = resolver
+        .resolve(&[root])
+        .await
+        .expect("resolver should resolve transitive chain");
+
+    let expected = [
+        "org.one:root:1.0.0",
+        "org.two:middle:1.0.0",
+        "org.three:leaf:1.0.0",
     ];
+    let resolved: Vec<_> = tree
+        .all_dependencies
+        .into_iter()
+        .map(|coord| coord.to_string())
+        .collect();
 
-    assert!(!root.artifact_id.is_empty());
-    assert_eq!(deps.len(), 3);
-
-    for dep_str in deps {
-        let dep = Coordinate::parse(dep_str);
-        assert!(dep.is_ok());
+    for coord in expected {
+        assert!(resolved.contains(&coord.to_string()));
     }
+
+    assert!(resolver.graph.get("org.one:root:1.0.0").is_some());
+    assert!(resolver.graph.get("org.two:middle:1.0.0").is_some());
+    assert!(resolver.graph.get("org.three:leaf:1.0.0").is_some());
 }
 
-#[test]
-fn test_version_range_resolution() {
-    // Version parsing
-    let versions = vec!["1.0.0", "2.0.0-beta", "3.0.0-rc1"];
+#[tokio::test]
+async fn test_resolver_ignores_missing_parent_and_transitive_errors() {
+    let base_url = "https://repo.example.test";
+    let mut resolver = Resolver::with_client(MavenClient::with_transport(
+        base_url,
+        Arc::new(MockTransport::new(resilient_routes(base_url))),
+    ));
+    let root = Coordinate::parse("org.faulty:root:1.0.0").unwrap();
+    let tree = resolver
+        .resolve(&[root])
+        .await
+        .expect("resolver should continue after non-fatal failures");
 
-    for version in versions {
-        let coord_str = format!("org.example:lib:{}", version);
-        let coord = Coordinate::parse(&coord_str);
-        assert!(coord.is_ok());
-    }
-}
+    let coords: Vec<_> = tree
+        .all_dependencies
+        .into_iter()
+        .map(|coord| coord.to_string())
+        .collect();
 
-#[test]
-fn test_exclude_transitive_dependencies() {
-    let coord = Coordinate::parse("org.example:lib:1.0.0").unwrap();
-    // Exclusion handling would be in resolver logic
-    assert!(!coord.artifact_id.is_empty());
-}
-
-#[test]
-fn test_dependency_classifier() {
-    let coords = vec!["org.example:lib:1.0.0", "org.example:lib:1.0.0"];
-
-    for coord_str in coords {
-        let coord = Coordinate::parse(coord_str);
-        assert!(coord.is_ok());
-    }
-}
-
-#[test]
-fn test_maven_bom_processing() {
-    let bom = Coordinate::parse("org.springframework.boot:spring-boot-dependencies:3.1.0").unwrap();
-
-    assert_eq!(bom.artifact_id, "spring-boot-dependencies");
-    assert_eq!(bom.version, "3.1.0");
-}
-
-#[test]
-fn test_transitive_exclusion() {
-    let coord = Coordinate::parse("org.app:app:1.0.0").unwrap();
-    assert_eq!(coord.artifact_id, "app");
-}
-
-#[test]
-fn test_dependency_conflict_resolution() {
-    let v1 = Coordinate::parse("org.lib:lib:1.0.0").unwrap();
-    let v2 = Coordinate::parse("org.lib:lib:2.0.0").unwrap();
-
-    assert_eq!(v1.version, "1.0.0");
-    assert_eq!(v2.version, "2.0.0");
-}
-
-#[test]
-fn test_circular_dependency_detection() {
-    // A -> B -> A (would be detected in resolver)
-    let a = Coordinate::parse("org.app:a:1.0.0").unwrap();
-    let b = Coordinate::parse("org.app:b:1.0.0").unwrap();
-
-    assert_eq!(a.artifact_id, "a");
-    assert_eq!(b.artifact_id, "b");
-}
-
-#[test]
-fn test_minimum_version_selection() {
-    let v1 = Coordinate::parse("org.lib:lib:1.0.0").unwrap();
-    let v2 = Coordinate::parse("org.lib:lib:1.5.0").unwrap();
-
-    assert!(v1.version < v2.version);
+    assert!(coords.contains(&"org.faulty:root:1.0.0".to_string()));
+    assert!(coords.contains(&"org.good:with-missing-parent:1.0.0".to_string()));
+    assert!(!coords.contains(&"org.good:missing-transitive:1.0.0".to_string()));
+    assert!(!coords.contains(&"org.bad:missing:1.0.0".to_string()));
+    assert!(
+        resolver
+            .graph
+            .get("org.good:with-missing-parent:1.0.0")
+            .is_some()
+    );
 }
