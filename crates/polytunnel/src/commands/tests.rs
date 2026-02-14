@@ -1,4 +1,4 @@
-use super::*;
+use super::init::do_init;
 use color_eyre::eyre::Result;
 use std::fs;
 use tempfile::tempdir;
