@@ -109,6 +109,18 @@ fn test_build_command_respects_clean_flag() -> Result<(), Box<dyn Error>> {
     let dir = tempdir()?;
     write_minimal_project(dir.path())?;
 
+    let source = dir.path().join("src/main/java/App.java");
+    fs::write(
+        source,
+        r#"
+public class App {
+    public static void main(String[] args) {
+        System.out.println("hello");
+    }
+}
+"#,
+    )?;
+
     // Pre-create output directory so we can verify `--clean` clears it before compilation.
     fs::create_dir_all(dir.path().join("target/classes"))?;
     fs::write(dir.path().join("target/classes/stale.txt"), b"stale")?;
@@ -119,7 +131,8 @@ fn test_build_command_respects_clean_flag() -> Result<(), Box<dyn Error>> {
         .assert()
         .success();
 
-    assert!(!dir.path().join("target/classes").exists());
+    assert!(!dir.path().join("target/classes/stale.txt").exists());
+    assert!(dir.path().join("target/classes/App.class").exists());
 
     Ok(())
 }
