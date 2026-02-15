@@ -48,9 +48,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-x86_64-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-x86_64-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-x86_64
 
       # Build workspace in debug mode
       - name: Build workspace
@@ -70,9 +68,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-x86_64-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-x86_64-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-x86_64
 
       - name: Build workspace
         run: cargo build --workspace --verbose
@@ -92,9 +88,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64
 
       # Build for Apple Silicon (native)
       - name: Build workspace (aarch64)
@@ -114,9 +108,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-x86_64-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-x86_64-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-x86_64
 
       - name: Build workspace
         run: cargo build --workspace --verbose
@@ -143,9 +135,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-aarch64-${{ hashFiles('**/Cargo.lock') }}-cross
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-aarch64-cross-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-aarch64-cross
 
       - name: Build workspace (aarch64)
         run: cargo build --workspace --target aarch64-unknown-linux-gnu --verbose
@@ -174,9 +164,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-musl-${{ hashFiles('**/Cargo.lock') }}-musl
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-musl-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-musl
 
       - name: Build workspace (musl)
         run: cargo build --workspace --target x86_64-unknown-linux-musl --verbose
@@ -195,9 +183,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-test-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-test
 
 
       # Run tests with output (don't stop on first failure)
@@ -222,9 +208,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-lint-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-lint-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-lint
 
       # Run Clippy with strict warnings (-D warnings)
       # This will fail the build if there are any warnings
@@ -261,9 +245,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-release-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-release-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-release
 
       # Build in release mode for optimization
       - name: Build release binary
@@ -288,9 +270,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64-release-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64-release-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-aarch64-release
 
       # Build release for Apple Silicon
       - name: Build release binary (aarch64)
@@ -311,9 +291,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-release-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-release-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-release
 
       - name: Build release binary
         run: cargo build --workspace --release --verbose
@@ -334,9 +312,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-coverage-${{ hashFiles('**/Cargo.lock') }}-coverage
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-coverage-
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-coverage
 
       # Install llvm-cov
       - name: Install llvm-cov
