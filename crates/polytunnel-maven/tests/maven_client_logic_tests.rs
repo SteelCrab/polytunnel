@@ -41,11 +41,10 @@ impl MavenTransport for MockTransport {
 }
 
 fn routes(base_url: &str) -> Vec<(String, u16, String)> {
-    let search_query_raw = "g:\"org.test\" AND a:\"lib\"";
     let query = urlencoding::encode("g:\"org.test\" AND a:\"lib\"");
     let search_url = format!("{base_url}/solrsearch/select");
 
-    let search_query = format!("{search_url}?q={search_query_raw}&rows=1&wt=json");
+    let search_query = format!("{search_url}?q={query}&rows=1&wt=json");
     let list_versions_query = format!("{search_url}?q={query}&core=gav&rows=100&wt=json");
 
     vec![
@@ -171,8 +170,8 @@ async fn test_search_handles_invalid_json() {
     let base_url = "https://repo.example.test";
     let search_url = format!("{base_url}/solrsearch/select");
     let mut routes = routes(base_url);
-    let raw_query = "g:\"org.test\" AND a:\"lib\"";
-    let malformed_query = format!("{search_url}?q={q}&rows=1&wt=json", q = raw_query);
+    let encoded_query = urlencoding::encode("g:\"org.test\" AND a:\"lib\"");
+    let malformed_query = format!("{search_url}?q={encoded_query}&rows=1&wt=json");
     routes.push((
         malformed_query,
         200,
@@ -210,7 +209,8 @@ async fn test_download_jar_bad_status() {
     ));
     let client = MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes)));
     let coord = Coordinate::parse("org.test:lib:1.0.0").unwrap();
-    let destination = tempfile::tempdir().unwrap().path().join("artifact.jar");
+    let tmpdir = tempfile::tempdir().unwrap();
+    let destination = tmpdir.path().join("artifact.jar");
 
     assert!(
         client
