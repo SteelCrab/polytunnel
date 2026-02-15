@@ -3,7 +3,12 @@
 [![codecov](https://codecov.io/gh/SteelCrab/polytunnel/graph/badge.svg?branch=main)](https://codecov.io/gh/SteelCrab/polytunnel?branch=main)
 [![한국어](https://img.shields.io/badge/lang-한국어-blue.svg)](README_KR.md)
 [![CI](https://github.com/SteelCrab/polytunnel/workflows/CI/badge.svg)](../../actions)
+
+
 [Roadmap](ROADMAP.md) | [로드맵](ROADMAP_KR.md)
+
+---
+
 
 Fast Java dependency manager written in Rust (uv/ruff style).
 
