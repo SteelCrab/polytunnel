@@ -1,96 +1,103 @@
-//! Tests for MavenClient logic using a local mock server
+//! Tests for `MavenClient` backed by a deterministic in-memory transport.
 
-use polytunnel_maven::{Coordinate, MavenClient};
+use polytunnel_maven::{
+    Coordinate, HttpResponse, HttpTransportFuture, MavenClient, MavenTransport,
+};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tempfile::NamedTempFile;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
 
-// Start a simple mock HTTP server for testing
-async fn start_mock_server() -> String {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let port = listener.local_addr().unwrap().port();
+#[derive(Clone)]
+struct MockTransport {
+    routes: HashMap<String, (u16, Vec<u8>)>,
+}
 
-    tokio::spawn(async move {
-        loop {
-            if let Ok((mut socket, _)) = listener.accept().await {
-                tokio::spawn(async move {
-                    let mut buf = [0; 4096];
-                    if let Ok(n) = socket.read(&mut buf).await {
-                        if n == 0 {
-                            return;
-                        }
+impl MockTransport {
+    fn new(routes: Vec<(String, u16, String)>) -> Self {
+        let routes = routes
+            .into_iter()
+            .map(|(path, status, body)| (path, (status, body.into_bytes())))
+            .collect();
 
-                        let request = String::from_utf8_lossy(&buf[..n]);
+        Self { routes }
+    }
+}
 
-                        let response = if request.contains("GET /org/test/lib/1.0.0/lib-1.0.0.pom")
-                        {
-                            let body = r#"
+impl MavenTransport for MockTransport {
+    fn get(&self, url: String) -> HttpTransportFuture {
+        let response = self
+            .routes
+            .get(&url)
+            .cloned()
+            .unwrap_or((404, b"not found".to_vec()));
+
+        Box::pin(async move {
+            Ok(HttpResponse {
+                status: response.0,
+                body: response.1,
+            })
+        })
+    }
+}
+
+fn routes(base_url: &str) -> Vec<(String, u16, String)> {
+    let query = urlencoding::encode("g:\"org.test\" AND a:\"lib\"");
+    let search_url = format!("{base_url}/solrsearch/select");
+
+    let search_query = format!("{search_url}?q={query}&rows=1&wt=json");
+    let list_versions_query = format!("{search_url}?q={query}&core=gav&rows=100&wt=json");
+
+    vec![
+        (
+            format!("{base_url}/org/test/lib/1.0.0/lib-1.0.0.pom"),
+            200,
+            r#"
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.test</groupId>
   <artifactId>lib</artifactId>
   <version>1.0.0</version>
 </project>
-"#;
-                            format!(
-                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-                                body.len(),
-                                body
-                            )
-                        } else if request.contains("GET /org/test/lib/1.0.0/lib-1.0.0.jar") {
-                            let body = "dummy jar content";
-                            format!(
-                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-                                body.len(),
-                                body
-                            )
-                        } else if request.contains("solrsearch/select") {
-                            let body = r#"
-{
-  "response": {
-    "numFound": 1,
-    "docs": [
-      {
-        "id": "org.test:lib:1.0.0",
-        "g": "org.test",
-        "a": "lib",
-        "v": "1.0.0",
-        "latestVersion": "1.0.0"
-      }
+"#
+            .to_string(),
+        ),
+        (
+            format!("{base_url}/org/test/unknown/1.0.0/unknown-1.0.0.pom"),
+            404,
+            "not found".to_string(),
+        ),
+        (
+            format!("{base_url}/org/test/lib/1.0.0/lib-1.0.0.jar"),
+            200,
+            "dummy jar content".to_string(),
+        ),
+        (
+            search_query,
+            200,
+            r#"{"response":{"numFound":1,"docs":[{"id":"org.test:lib:1.0.0","g":"org.test","a":"lib","v":"1.0.0","latestVersion":"1.0.0"}]} }"#
+                .to_string(),
+        ),
+        (
+            list_versions_query,
+            200,
+            r#"{"response":{"numFound":1,"docs":[{"id":"org.test:lib:1.0.0","g":"org.test","a":"lib","v":"1.0.0","latestVersion":"1.0.0"}]} }"#
+                .to_string(),
+        ),
     ]
-  }
-}
-"#;
-                            format!(
-                                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-                                body.len(),
-                                body
-                            )
-                        } else {
-                            "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".to_string()
-                        };
-
-                        let _ = socket.write_all(response.as_bytes()).await;
-                    }
-                });
-            }
-        }
-    });
-
-    format!("http://127.0.0.1:{}", port)
 }
 
 #[tokio::test]
 async fn test_fetch_pom_success() {
-    let base_url = start_mock_server().await;
-    let client = MavenClient::with_base_url(&base_url);
-
+    let base_url = "https://repo.example.test";
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))));
     let coord = Coordinate::parse("org.test:lib:1.0.0").unwrap();
-    let pom = client.fetch_pom(&coord).await;
 
-    assert!(pom.is_ok());
-    let pom = pom.unwrap();
-    // Use coordinate field to access metadata
+    let pom = client
+        .fetch_pom(&coord)
+        .await
+        .expect("fetch_pom should succeed");
+
     assert_eq!(pom.coordinate.group_id, "org.test");
     assert_eq!(pom.coordinate.artifact_id, "lib");
     assert_eq!(pom.coordinate.version, "1.0.0");
@@ -98,46 +105,117 @@ async fn test_fetch_pom_success() {
 
 #[tokio::test]
 async fn test_fetch_pom_not_found() {
-    let base_url = start_mock_server().await;
-    let client = MavenClient::with_base_url(&base_url);
-
-    // Request non-existent artifact
+    let base_url = "https://repo.example.test";
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))));
     let coord = Coordinate::parse("org.test:unknown:1.0.0").unwrap();
-    let result = client.fetch_pom(&coord).await;
 
-    assert!(result.is_err());
+    assert!(client.fetch_pom(&coord).await.is_err());
 }
 
 #[tokio::test]
 async fn test_download_jar() {
-    let base_url = start_mock_server().await;
-    let client = MavenClient::with_base_url(&base_url);
-
+    let base_url = "https://repo.example.test";
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))));
     let coord = Coordinate::parse("org.test:lib:1.0.0").unwrap();
     let temp_file = NamedTempFile::new().unwrap();
-    let dest_path = temp_file.path().to_path_buf();
+    let destination = temp_file.path().to_path_buf();
 
-    let result = client.download_jar(&coord, &dest_path, false).await;
+    client
+        .download_jar(&coord, &destination, false)
+        .await
+        .expect("download_jar should succeed");
 
-    assert!(result.is_ok());
-    let content = std::fs::read_to_string(&dest_path).unwrap();
+    let content = std::fs::read_to_string(&destination).unwrap();
     assert_eq!(content, "dummy jar content");
 }
 
 #[tokio::test]
-async fn test_list_versions() {
-    let base_url = start_mock_server().await;
-    let _client = MavenClient::with_base_url(&base_url);
+async fn test_search() {
+    let base_url = "https://repo.example.test";
+    let search_url = format!("{base_url}/solrsearch/select");
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))))
+            .with_search_url(&search_url);
 
-    // This test might fail if MAVEN_SEARCH_URL is hardcoded in client.rs.
-    // However, list_versions uses MAVEN_SEARCH_URL constant, so it will hit real Maven Central.
-    // To properly test this with mock server, client.rs needs to use base_url for search too,
-    // or provide a way to override search URL.
-    // For now, we skip asserting the result or validting mock server hit,
-    // but calling it contributes to coverage if it doesn't fail.
-    // Since it calls real network, it might be flaky.
-    // We will comment this out if it causes issues, but for coverage, simple unit test is better.
-    // Current client implementation:
-    // let url = format!("{}?q=...&wt=json", MAVEN_SEARCH_URL, ...);
-    // So it ignores base_url. We cannot test list_versions with mock server without code changes.
+    let results = client
+        .search("g:\"org.test\" AND a:\"lib\"", 1)
+        .await
+        .expect("search should succeed");
+
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].id, "org.test:lib:1.0.0");
+    assert_eq!(results[0].version, Some("1.0.0".to_string()));
+}
+
+#[tokio::test]
+async fn test_list_versions() {
+    let base_url = "https://repo.example.test";
+    let search_url = format!("{base_url}/solrsearch/select");
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))))
+            .with_search_url(&search_url);
+
+    let versions = client
+        .list_versions("org.test", "lib")
+        .await
+        .expect("list_versions should succeed");
+
+    assert_eq!(versions, vec!["1.0.0".to_string()]);
+}
+
+#[tokio::test]
+async fn test_search_handles_invalid_json() {
+    let base_url = "https://repo.example.test";
+    let search_url = format!("{base_url}/solrsearch/select");
+    let mut routes = routes(base_url);
+    let encoded_query = urlencoding::encode("g:\"org.test\" AND a:\"lib\"");
+    let malformed_query = format!("{search_url}?q={encoded_query}&rows=1&wt=json");
+    routes.push((
+        malformed_query,
+        200,
+        r#"{"response":{"numFound":1,"docs":"not-json"}}"#.to_string(),
+    ));
+    let client = MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes)))
+        .with_search_url(&search_url);
+
+    assert!(
+        client
+            .search("g:\"org.test\" AND a:\"lib\"", 1)
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn test_fetch_pom_content_bad_status() {
+    let base_url = "https://repo.example.test";
+    let client =
+        MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes(base_url))));
+    let coord = Coordinate::parse("org.test:unknown:1.0.0").unwrap();
+
+    assert!(client.fetch_pom_content(&coord).await.is_err());
+}
+
+#[tokio::test]
+async fn test_download_jar_bad_status() {
+    let base_url = "https://repo.example.test";
+    let mut routes = routes(base_url);
+    routes.push((
+        format!("{base_url}/org/test/lib/1.0.0/lib-1.0.0.jar"),
+        500,
+        "server error".to_string(),
+    ));
+    let client = MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes)));
+    let coord = Coordinate::parse("org.test:lib:1.0.0").unwrap();
+    let tmpdir = tempfile::tempdir().unwrap();
+    let destination = tmpdir.path().join("artifact.jar");
+
+    assert!(
+        client
+            .download_jar(&coord, &destination, true)
+            .await
+            .is_err()
+    );
 }

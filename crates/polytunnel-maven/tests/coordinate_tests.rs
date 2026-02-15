@@ -24,6 +24,25 @@ fn test_parse_invalid() {
 }
 
 #[test]
+fn test_parse_with_packaging() {
+    let coord = Coordinate::parse("org.slf4j:slf4j-api:jar:2.0.9").unwrap();
+    assert_eq!(coord.group_id, "org.slf4j");
+    assert_eq!(coord.artifact_id, "slf4j-api");
+    assert_eq!(coord.packaging, "jar");
+    assert_eq!(coord.version, "2.0.9");
+}
+
+#[test]
+fn test_parse_with_classifier() {
+    let coord = Coordinate::parse("org.slf4j:slf4j-api:jar:jdk8:2.0.9").unwrap();
+    assert_eq!(coord.group_id, "org.slf4j");
+    assert_eq!(coord.artifact_id, "slf4j-api");
+    assert_eq!(coord.packaging, "jar");
+    assert_eq!(coord.classifier, Some("jdk8".to_string()));
+    assert_eq!(coord.version, "2.0.9");
+}
+
+#[test]
 fn test_repo_path() {
     let coord = Coordinate::new("org.slf4j", "slf4j-api", "2.0.9");
     assert_eq!(coord.repo_path(), "org/slf4j/slf4j-api/2.0.9");

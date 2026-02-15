@@ -60,12 +60,38 @@ impl ClasspathBuilder {
 
         // Step 3: Resolve dependency tree (parallel, includes transitives)
         let mut resolver = polytunnel_resolver::Resolver::new();
-        let resolved_tree = resolver.resolve(&root_coords).await.map_err(|e| match e {
+        let resolved_tree = resolver
+            .resolve(&root_coords)
+            .await
+            .map_err(Self::map_resolver_error)?;
+
+        self.build_classpath_from_resolved_tree(cache_path, resolved_tree.all_dependencies, verbose)
+            .await
+    }
+
+    fn map_resolver_error(error: polytunnel_resolver::ResolverError) -> BuildError {
+        match error {
             polytunnel_resolver::ResolverError::Io(e) => BuildError::Io(e),
             polytunnel_resolver::ResolverError::Maven(e) => BuildError::from(e),
             polytunnel_resolver::ResolverError::Config(e) => BuildError::Core(e),
-            e => BuildError::Resolver(e),
-        })?;
+            other => BuildError::Resolver(other),
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn map_resolver_error_for_tests(error: polytunnel_resolver::ResolverError) -> BuildError {
+        Self::map_resolver_error(error)
+    }
+
+    async fn build_classpath_from_resolved_tree(
+        &mut self,
+        cache_path: PathBuf,
+        resolved_dependencies: Vec<Coordinate>,
+        verbose: bool,
+    ) -> Result<ClasspathResult> {
+        if !cache_path.exists() {
+            std::fs::create_dir_all(&cache_path)?;
+        }
 
         // Step 4: Collect download targets (check cache)
         let client = polytunnel_maven::MavenClient::new();
@@ -73,7 +99,7 @@ impl ClasspathBuilder {
         let mut jar_paths: std::collections::HashMap<String, PathBuf> =
             std::collections::HashMap::new();
 
-        for coord in &resolved_tree.all_dependencies {
+        for coord in &resolved_dependencies {
             let artifact_path = cache_path
                 .join(coord.repo_path())
                 .join(coord.jar_filename());
@@ -142,7 +168,7 @@ impl ClasspathBuilder {
         let mut test_cp = Vec::new();
         let mut runtime_cp = Vec::new();
 
-        for coord in &resolved_tree.all_dependencies {
+        for coord in &resolved_dependencies {
             if let Some(path) = jar_paths.get(&coord.to_string()) {
                 let scope = self
                     .get_dependency_scope(coord)
@@ -178,6 +204,20 @@ impl ClasspathBuilder {
 
         self.cached_result = Some(result.clone());
         Ok(result)
+    }
+
+    pub async fn build_classpath_from_resolved_tree_for_tests(
+        &mut self,
+        cache_dir: &str,
+        resolved_dependencies: Vec<Coordinate>,
+        verbose: bool,
+    ) -> Result<ClasspathResult> {
+        self.build_classpath_from_resolved_tree(
+            PathBuf::from(cache_dir),
+            resolved_dependencies,
+            verbose,
+        )
+        .await
     }
 
     fn get_root_coordinates(&self) -> Result<Vec<Coordinate>> {

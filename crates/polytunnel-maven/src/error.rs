@@ -18,6 +18,18 @@ pub enum MavenError {
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
 
+    /// HTTP status error
+    #[error("HTTP status {status} for {url}")]
+    HttpStatus { status: u16, url: String },
+
+    /// Failed to parse JSON response
+    #[error("JSON parse error: {message}")]
+    JsonParse { message: String },
+
+    /// Response body is not valid UTF-8 text
+    #[error("Invalid UTF-8 response: {message}")]
+    InvalidUtf8 { message: String },
+
     /// XML parsing error
     #[error("XML parse error: {message}")]
     XmlParse { message: String },

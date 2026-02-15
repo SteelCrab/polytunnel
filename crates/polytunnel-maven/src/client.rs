@@ -1,18 +1,61 @@
 //! Maven Central API client
 
 use crate::coordinate::Coordinate;
-use crate::error::Result;
+use crate::error::{MavenError, Result};
 use crate::pom::Pom;
 use reqwest::Client;
+use serde::de::DeserializeOwned;
+use std::future::Future;
 use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::Arc;
 
 const MAVEN_CENTRAL_URL: &str = "https://repo1.maven.org/maven2";
 const MAVEN_SEARCH_URL: &str = "https://search.maven.org/solrsearch/select";
 
+pub type HttpTransportFuture = Pin<Box<dyn Future<Output = Result<HttpResponse>> + Send>>;
+
+#[derive(Clone)]
+pub struct HttpResponse {
+    pub status: u16,
+    pub body: Vec<u8>,
+}
+
+/// Pluggable transport for testability and integration boundaries.
+pub trait MavenTransport: Send + Sync {
+    fn get(&self, url: String) -> HttpTransportFuture;
+}
+
+#[derive(Clone)]
+struct ReqwestTransport {
+    client: Client,
+}
+
+impl ReqwestTransport {
+    fn new() -> Self {
+        Self {
+            client: Client::new(),
+        }
+    }
+}
+
+impl MavenTransport for ReqwestTransport {
+    fn get(&self, url: String) -> HttpTransportFuture {
+        let client = self.client.clone();
+        Box::pin(async move {
+            let response = client.get(&url).send().await?;
+            let status = response.status().as_u16();
+            let body = response.bytes().await?.to_vec();
+
+            Ok(HttpResponse { status, body })
+        })
+    }
+}
+
 /// Maven Central HTTP client
 #[derive(Clone)]
 pub struct MavenClient {
-    http: Client,
+    http: Arc<dyn MavenTransport>,
     base_url: String,
     search_url: String,
 }
@@ -43,16 +86,16 @@ pub struct SearchDoc {
 
 impl MavenClient {
     pub fn new() -> Self {
-        Self {
-            http: Client::new(),
-            base_url: MAVEN_CENTRAL_URL.to_string(),
-            search_url: MAVEN_SEARCH_URL.to_string(),
-        }
+        Self::with_transport(MAVEN_CENTRAL_URL, Arc::new(ReqwestTransport::new()))
     }
 
     pub fn with_base_url(base_url: &str) -> Self {
+        Self::with_transport(base_url, Arc::new(ReqwestTransport::new()))
+    }
+
+    pub fn with_transport(base_url: &str, transport: Arc<dyn MavenTransport>) -> Self {
         Self {
-            http: Client::new(),
+            http: transport,
             base_url: base_url.to_string(),
             search_url: MAVEN_SEARCH_URL.to_string(),
         }
@@ -63,18 +106,43 @@ impl MavenClient {
         self
     }
 
+    async fn read_json<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
+        let response = self.http.get(url.to_string()).await?;
+        if !(200..=299).contains(&response.status) {
+            return Err(MavenError::HttpStatus {
+                status: response.status,
+                url: url.to_string(),
+            });
+        }
+
+        serde_json::from_slice(&response.body).map_err(|error| MavenError::JsonParse {
+            message: error.to_string(),
+        })
+    }
+
+    async fn read_text(&self, url: &str) -> Result<String> {
+        let response = self.http.get(url.to_string()).await?;
+        if !(200..=299).contains(&response.status) {
+            return Err(MavenError::HttpStatus {
+                status: response.status,
+                url: url.to_string(),
+            });
+        }
+
+        String::from_utf8(response.body).map_err(|error| MavenError::InvalidUtf8 {
+            message: error.to_string(),
+        })
+    }
+
     /// Search artifacts by query
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
-        let url = format!("{}?q={}&rows={}&wt=json", self.search_url, query, limit);
-
-        let response: SearchResponse = self
-            .http
-            .get(&url)
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+        let url = format!(
+            "{}?q={}&rows={}&wt=json",
+            self.search_url,
+            urlencoding::encode(query),
+            limit
+        );
+        let response: SearchResponse = self.read_json(&url).await?;
 
         Ok(response.response.docs)
     }
@@ -87,17 +155,7 @@ impl MavenClient {
             coord.repo_path(),
             coord.pom_filename()
         );
-
-        let content = self
-            .http
-            .get(&url)
-            .send()
-            .await?
-            .error_for_status()?
-            .text()
-            .await?;
-
-        Ok(content)
+        self.read_text(&url).await
     }
 
     /// Fetch and parse POM
@@ -114,15 +172,7 @@ impl MavenClient {
             self.search_url,
             urlencoding::encode(&query)
         );
-
-        let response: SearchResponse = self
-            .http
-            .get(&url)
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
+        let response: SearchResponse = self.read_json(&url).await?;
 
         let versions: Vec<String> = response
             .response
@@ -152,21 +202,21 @@ impl MavenClient {
         verbose: bool,
     ) -> Result<()> {
         let url = self.jar_url(coord);
+        let request_url = url.clone();
 
         if verbose {
             println!("   Downloading {}", coord);
         }
 
-        let bytes = self
-            .http
-            .get(&url)
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?;
+        let response = self.http.get(request_url).await?;
+        if !(200..=299).contains(&response.status) {
+            return Err(MavenError::HttpStatus {
+                status: response.status,
+                url,
+            });
+        }
 
-        std::fs::write(dest, bytes)?;
+        std::fs::write(dest, response.body)?;
         Ok(())
     }
 }

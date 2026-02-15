@@ -1,388 +1,286 @@
-//! Integration tests for error handling across modules
-//!
-//! Coverage: Verifies that common error conditions (missing files, network failures, compilation errors) are handled gracefully across the polyglot boundary.
+use assert_cmd::Command;
+use std::error::Error;
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use tempfile::tempdir;
 
-#[test]
-fn test_error_compilation_failed() {
-    let error_msg = "Compilation failed: cannot find symbol";
-    assert!(error_msg.contains("failed"));
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
+fn write_minimal_project(path: &Path) -> Result<(), Box<dyn Error>> {
+    fs::create_dir_all(path.join("src/main/java"))?;
+    fs::create_dir_all(path.join("src/test/java"))?;
+
+    fs::write(
+        path.join("polytunnel.toml"),
+        r#"
+[project]
+name = "demo"
+java_version = "17"
+
+[build]
+source_dirs = ["src/main/java"]
+test_source_dirs = ["src/test/java"]
+output_dir = "target/classes"
+test_output_dir = "target/test-classes"
+cache_dir = ".polytunnel/cache"
+"#,
+    )?;
+
+    Ok(())
+}
+
+fn write_minimal_source(path: &Path) -> Result<(), Box<dyn Error>> {
+    fs::create_dir_all(path.join("src/main/java"))?;
+    fs::write(
+        path.join("src/main/java/App.java"),
+        "public class App { public static void main(String[] args) {} }",
+    )?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn write_failing_javac_script(dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
+    let script = dir.join("javac");
+    let mut file = fs::File::create(&script)?;
+    file.write_all(b"#!/usr/bin/env sh\n")?;
+    file.write_all(b"echo \"mock javac failure\" >&2\n")?;
+    file.write_all(b"exit 1\n")?;
+
+    let mut perms = file.metadata()?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&script, perms)?;
+
+    Ok(script)
+}
+
+#[cfg(unix)]
+fn write_success_javac_script(java_home: &Path) -> Result<PathBuf, Box<dyn Error>> {
+    let bin_dir = java_home.join("bin");
+    fs::create_dir_all(&bin_dir)?;
+    let script = bin_dir.join("javac");
+    let mut file = fs::File::create(&script)?;
+    file.write_all(b"#!/usr/bin/env sh\n")?;
+    file.write_all(b"exit 0\n")?;
+
+    let mut perms = file.metadata()?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&script, perms)?;
+
+    Ok(script)
+}
+
+#[cfg(unix)]
+fn write_failed_test_java_script(dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
+    let script = dir.join("java");
+    let mut file = fs::File::create(&script)?;
+    file.write_all(b"#!/usr/bin/env sh\n")?;
+    file.write_all(b"echo '1 tests found'\n")?;
+    file.write_all(b"echo '0 tests successful'\n")?;
+    file.write_all(b"echo '1 tests failed'\n")?;
+    file.write_all(b"exit 0\n")?;
+
+    let mut perms = file.metadata()?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&script, perms)?;
+
+    Ok(script)
 }
 
 #[test]
-fn test_error_test_execution_failed() {
-    let error_msg = "Test execution failed: assertion error";
-    assert!(error_msg.contains("failed"));
+fn test_build_without_config_fails_with_clear_message() {
+    let dir = tempdir().expect("tempdir");
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .args(["build", "--skip-tests"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("IO error"));
 }
 
 #[test]
-fn test_error_javac_not_found() {
-    let error_msg = "Java compiler not found in PATH";
-    assert!(error_msg.contains("not found"));
+fn test_build_with_missing_source_directory_fails() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        r#"
+[project]
+name = "broken"
+java_version = "17"
+
+[build]
+source_dirs = ["missing/src"]
+test_source_dirs = ["src/test/java"]
+output_dir = "target/classes"
+test_output_dir = "target/test-classes"
+cache_dir = ".polytunnel/cache"
+"#,
+    )?;
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .args(["build", "--skip-tests"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("Source directory not found"));
+
+    Ok(())
 }
 
 #[test]
-fn test_error_config_file_not_found() {
-    let error_msg = "Configuration file not found: polytunnel.toml";
-    assert!(error_msg.contains("not found"));
+fn test_test_without_config_is_reported() {
+    let dir = tempdir().expect("tempdir");
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("test")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("IO error"));
 }
 
 #[test]
-fn test_error_source_directory_not_found() {
-    let error_msg = "Source directory not found: src/main/java";
-    assert!(error_msg.contains("not found"));
+fn test_invalid_toml_reports_parse_error() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    fs::write(dir.path().join("polytunnel.toml"), "project = [broken")?;
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("build")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("TOML parse error"));
+
+    Ok(())
 }
 
+#[cfg(unix)]
 #[test]
-fn test_error_dependency_resolution_failed() {
-    let error_msg = "Dependency resolution failed for junit:junit:4.13.2";
-    assert!(error_msg.contains("resolution"));
+fn test_build_reports_mocked_compiler_failure() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    write_minimal_project(dir.path())?;
+    write_minimal_source(dir.path())?;
+
+    let mock_bin = tempdir()?;
+    let _script = write_failing_javac_script(mock_bin.path())?;
+    let path = format!(
+        "{}:{}",
+        mock_bin.path().display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .args(["build", "--skip-tests"])
+        .env("PATH", path)
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("Compilation failed with"));
+
+    Ok(())
 }
 
+#[cfg(unix)]
 #[test]
-fn test_error_artifact_download_failed() {
-    let error_msg = "Artifact download failed: Connection timeout";
-    assert!(error_msg.contains("failed"));
+fn test_test_command_reports_failed_tests() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    fs::create_dir_all(dir.path().join("src/main/java"))?;
+    fs::create_dir_all(dir.path().join("src/test/java"))?;
+    fs::create_dir_all(dir.path().join("target/test-classes"))?;
+    fs::write(
+        dir.path().join("target/test-classes/AppTest.class"),
+        b"class",
+    )?;
+
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        r#"
+[project]
+name = "demo"
+java_version = "17"
+
+[build]
+source_dirs = ["src/main/java"]
+test_source_dirs = ["src/test/java"]
+output_dir = "target/junit-platform-console-standalone.jar"
+test_output_dir = "target/test-classes"
+cache_dir = ".polytunnel/cache"
+"#,
+    )?;
+
+    let fake_java_bin = tempdir()?;
+    let fake_java_home = tempdir()?;
+    let _java = write_failed_test_java_script(fake_java_bin.path())?;
+    let _javac = write_success_javac_script(fake_java_home.path())?;
+    let path = format!(
+        "{}:{}",
+        fake_java_bin.path().display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("test")
+        .env("PATH", path)
+        .env("JAVA_HOME", fake_java_home.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("1 test(s) failed"));
+
+    Ok(())
 }
 
+#[cfg(unix)]
 #[test]
-fn test_error_invalid_pom_format() {
-    let error_msg = "Invalid POM format: unexpected XML structure";
-    assert!(error_msg.contains("Invalid"));
+fn test_vscode_maps_build_error_when_javac_missing() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    write_minimal_project(dir.path())?;
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("vscode")
+        .env("PATH", "")
+        .env_remove("JAVA_HOME")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "Java compiler (javac) not found in PATH",
+        ));
+
+    Ok(())
 }
 
+#[cfg(unix)]
 #[test]
-fn test_error_version_conflict_unresolvable() {
-    let error_msg = "Version conflict unresolvable: junit:junit needs 4.12 and 4.13.2";
-    assert!(error_msg.contains("conflict"));
+fn test_vscode_maps_io_error_when_project_path_is_directory() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    write_minimal_project(dir.path())?;
+    fs::create_dir_all(dir.path().join(".project"))?;
+
+    let fake_java_home = tempdir()?;
+    let _javac = write_success_javac_script(fake_java_home.path())?;
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("vscode")
+        .env("PATH", "")
+        .env("JAVA_HOME", fake_java_home.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("IO error"));
+
+    Ok(())
 }
 
+#[cfg(not(unix))]
 #[test]
-fn test_error_circular_dependency() {
-    let error_msg = "Circular dependency detected: a->b->a";
-    assert!(error_msg.contains("Circular"));
-}
-
-#[test]
-fn test_error_invalid_java_version() {
-    let error_msg = "Invalid Java version: 0.5";
-    assert!(error_msg.contains("Invalid"));
-}
-
-#[test]
-fn test_error_missing_repository() {
-    let error_msg = "Repository not found: custom-repo";
-    assert!(error_msg.contains("not found"));
-}
-
-#[test]
-fn test_error_insufficient_permissions() {
-    let error_msg = "Insufficient permissions to write to output directory";
-    assert!(error_msg.contains("permissions"));
-}
-
-#[test]
-fn test_error_disk_space_insufficient() {
-    let error_msg = "Insufficient disk space for build artifacts";
-    assert!(error_msg.contains("space"));
-}
-
-#[test]
-fn test_error_network_connection_failed() {
-    let error_msg = "Network connection failed: Unable to reach repository";
-    assert!(error_msg.contains("failed"));
-}
-
-#[test]
-fn test_error_ssl_certificate_error() {
-    let error_msg = "SSL certificate verification failed";
-    assert!(error_msg.contains("SSL"));
-}
-
-#[test]
-fn test_error_invalid_classifier() {
-    let error_msg = "Invalid classifier: unknown";
-    assert!(error_msg.contains("Invalid"));
-}
-
-#[test]
-fn test_error_test_framework_not_detected() {
-    let error_msg = "Test framework not detected in dependencies";
-    assert!(error_msg.contains("not detected"));
-}
-
-#[test]
-fn test_error_test_class_not_found() {
-    let error_msg = "Test class not found: CalculatorTest";
-    assert!(error_msg.contains("not found"));
-}
-
-#[test]
-fn test_error_malformed_coordinates() {
-    let error_msg = "Malformed coordinates: group:artifact:version:extra:extra";
-    assert!(error_msg.contains("Malformed"));
-}
-
-#[test]
-fn test_success_message_compilation() {
-    let msg = "Compilation successful: 5 files compiled";
-    assert!(msg.contains("successful"));
-}
-
-#[test]
-fn test_success_message_tests_passed() {
-    let msg = "All 15 tests passed successfully";
-    assert!(msg.contains("passed"));
-}
-
-#[test]
-fn test_success_message_build_completed() {
-    let msg = "Build completed successfully in 3.45 seconds";
-    assert!(msg.contains("successfully"));
-}
-
-#[test]
-fn test_warning_message_deprecated_dependency() {
-    let msg = "Warning: Deprecated dependency junit:junit:4.12 detected";
-    assert!(msg.contains("Warning"));
-}
-
-#[test]
-fn test_warning_message_optional_dependency_missing() {
-    let msg = "Warning: Optional dependency not resolved";
-    assert!(msg.contains("Warning"));
-}
-
-#[test]
-fn test_warning_message_version_mismatch() {
-    let msg = "Warning: Requested version 1.0.0 differs from managed version";
-    assert!(msg.contains("Warning"));
-}
-
-#[test]
-fn test_info_message_dependency_found() {
-    let msg = "Info: Dependency junit:junit:4.13.2 found in local cache";
-    assert!(msg.contains("Info"));
-}
-
-#[test]
-fn test_info_message_downloading_artifact() {
-    let msg = "Info: Downloading junit-junit-4.13.2.jar";
-    assert!(msg.contains("Info"));
-}
-
-#[test]
-fn test_info_message_compiling_sources() {
-    let msg = "Info: Compiling 8 source files";
-    assert!(msg.contains("Info"));
-}
-
-#[test]
-fn test_result_type_ok_value() {
-    let result: Result<String, String> = Ok("Success".to_string());
-    assert!(result.is_ok());
-}
-
-#[test]
-fn test_result_type_err_value() {
-    let result: Result<String, String> = Err("Error occurred".to_string());
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_result_unwrap_ok() {
-    let result: Result<i32, String> = Ok(42);
-    if let Ok(val) = result {
-        assert_eq!(val, 42);
-    }
-}
-
-#[test]
-fn test_option_some_value() {
-    let opt: Option<String> = Some("value".to_string());
-    assert!(opt.is_some());
-}
-
-#[test]
-fn test_option_none_value() {
-    let opt: Option<String> = None;
-    assert!(opt.is_none());
-}
-
-#[test]
-fn test_error_details_extraction() {
-    let error_details = "Compilation failed: cannot find symbol at line 42";
-    let parts: Vec<&str> = error_details.split(": ").collect();
-    assert!(parts.len() >= 2);
-}
-
-#[test]
-fn test_error_context_file_path() {
-    let error = "src/main/java/App.java:42: error: cannot find symbol";
-    assert!(error.contains("App.java"));
-    assert!(error.contains("42"));
-}
-
-#[test]
-fn test_error_context_compilation_context() {
-    let context = "during compilation of src/main/java/Calculator.java";
-    assert!(context.contains("Calculator.java"));
-}
-
-#[test]
-fn test_error_recovery_suggestion() {
-    let suggestion = "Suggestion: Ensure all dependencies are resolved with 'pt build'";
-    assert!(suggestion.contains("Suggestion"));
-}
-
-#[test]
-fn test_stacktrace_generation() {
-    let stacktrace = "java.lang.NullPointerException at App.main(App.java:10)";
-    assert!(stacktrace.contains("NullPointerException"));
-}
-
-#[test]
-fn test_error_chaining() {
-    let cause = "Caused by: java.io.FileNotFoundException";
-    assert!(cause.contains("Caused by"));
-}
-
-#[test]
-fn test_error_recovery_indication() {
-    let msg = "Error (recoverable): Could not connect to repository, retrying...";
-    assert!(msg.contains("recoverable"));
-}
-
-#[test]
-fn test_error_severity_critical() {
-    let severity = "CRITICAL: Build failed with unrecoverable error";
-    assert!(severity.contains("CRITICAL"));
-}
-
-#[test]
-fn test_error_severity_warning() {
-    let severity = "WARNING: This configuration is deprecated";
-    assert!(severity.contains("WARNING"));
-}
-
-#[test]
-fn test_error_exit_code_zero() {
-    let exit_code = 0;
-    assert_eq!(exit_code, 0);
-}
-
-#[test]
-fn test_error_exit_code_nonzero() {
-    let exit_code = 1;
-    assert_ne!(exit_code, 0);
-}
-
-#[test]
-fn test_error_exit_code_compilation_error() {
-    let exit_code = 1;
-    assert_ne!(exit_code, 0);
-}
-
-#[test]
-fn test_error_exit_code_test_failure() {
-    let exit_code = 1;
-    assert_ne!(exit_code, 0);
-}
-
-#[test]
-fn test_error_exit_code_configuration_error() {
-    let exit_code = 2;
-    assert_ne!(exit_code, 0);
-}
-
-#[test]
-fn test_error_exit_code_network_error() {
-    let exit_code = 3;
-    assert_ne!(exit_code, 0);
-}
-
-#[test]
-fn test_error_recovery_retry_attempt() {
-    let message = "Retry attempt 1 of 3";
-    assert!(message.contains("Retry"));
-}
-
-#[test]
-fn test_error_message_truncation() {
-    let long_error = "This is a very long error message that exceeds normal console width and should be truncated appropriately";
-    assert!(long_error.len() > 50);
-}
-
-#[test]
-fn test_error_message_formatting() {
-    let formatted = "Error: Cannot compile\n  at src/Main.java:10\n  reason: missing symbol";
-    assert!(formatted.contains("Error:"));
-    assert!(formatted.contains("at src/"));
-}
-
-#[test]
-fn test_validation_error_empty_project_name() {
-    let error = "Validation error: Project name cannot be empty";
-    assert!(error.contains("Validation"));
-}
-
-#[test]
-fn test_validation_error_invalid_characters() {
-    let error = "Validation error: Project name contains invalid characters";
-    assert!(error.contains("invalid characters"));
-}
-
-#[test]
-fn test_validation_error_reserved_keyword() {
-    let error = "Validation error: 'class' is a reserved keyword";
-    assert!(error.contains("reserved"));
-}
-
-#[test]
-fn test_error_handling_null_reference() {
-    let result: Option<&str> = None;
-    assert!(result.is_none());
-}
-
-#[test]
-fn test_error_handling_type_mismatch() {
-    let value: i32 = 42;
-    assert!(value > 0);
-}
-
-#[test]
-fn test_error_recovery_fallback_value() {
-    let value = "fallback";
-    assert_eq!(value, "fallback");
-}
-
-#[test]
-fn test_error_context_preservation() {
-    let context: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-    assert_eq!(context.len(), 0);
-}
-
-#[test]
-fn test_error_suppression_logging() {
-    let silent = true;
-    if !silent {
-        // Error would be logged
-    }
-    assert!(silent);
-}
-
-#[test]
-fn test_error_aggregation_multiple_errors() {
-    let errors = [
-        "Error 1: File not found",
-        "Error 2: Invalid format",
-        "Error 3: Network timeout",
-    ];
-    assert_eq!(errors.len(), 3);
-}
-
-#[test]
-fn test_error_order_preservation() {
-    let error_sequence = ["First error", "Second error", "Third error"];
-    assert_eq!(error_sequence[0], "First error");
-    assert_eq!(error_sequence[2], "Third error");
+fn test_build_reports_compiler_failure_placeholder() {
+    // Windows CI can run this behavior through environment-specific integration.
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("Usage: pt"));
 }
