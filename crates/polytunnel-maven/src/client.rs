@@ -45,7 +45,7 @@ impl MavenTransport for ReqwestTransport {
         Box::pin(async move {
             let response = client.get(&url).send().await?;
             let status = response.status().as_u16();
-            let body = response.error_for_status()?.bytes().await?.to_vec();
+            let body = response.bytes().await?.to_vec();
 
             Ok(HttpResponse { status, body })
         })
@@ -136,7 +136,12 @@ impl MavenClient {
 
     /// Search artifacts by query
     pub async fn search(&self, query: &str, limit: u32) -> Result<Vec<SearchDoc>> {
-        let url = format!("{}?q={}&rows={}&wt=json", self.search_url, query, limit);
+        let url = format!(
+            "{}?q={}&rows={}&wt=json",
+            self.search_url,
+            urlencoding::encode(query),
+            limit
+        );
         let response: SearchResponse = self.read_json(&url).await?;
 
         Ok(response.response.docs)
