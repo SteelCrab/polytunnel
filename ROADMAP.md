@@ -1,6 +1,7 @@
 # Polytunnel Roadmap
 
 This roadmap is based on workspace version **0.1.0** and is split into a 12-week plan with three milestones.
+The goal of `v0.1.0` is a simple, usable CLI that can initialize, build, and test Java projects reliably.
 
 ## Historical Completed Work (Past Commits & Branches)
 - [x] `feat/build-progress-bar` — progress bar and concurrent download orchestration.
@@ -20,10 +21,11 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 - [x] `ci/codecov` + `test-coverage` — test instrumentation and coverage workflow modernization.
 
 ## Milestone: v0.1.0 (In Progress)
-- [x] Week 1: Initial command set shipped (`init`, `build`, `test`).
-- [ ] Week 2: Baseline release packaging and repository publication preparation.
-- [ ] Week 3: CI/build/test matrix stabilization for initial release.
-- [ ] Week 4: Contributor-level docs and release notes finalized in README.
+- [x] Week 1: Validate and ship a minimal CLI core (`init`, `build`, `test`) that works end-to-end.
+- [ ] Week 1: Polish error messages and CLI help for beginner users.
+- [ ] Week 2: Add small CLI usability checks for default flows (build-only and test-only paths).
+- [ ] Week 3: Improve CI confidence for baseline commands (`build`, `test`) on supported platforms.
+- [ ] Week 4: Finalize README with practical command examples and simple troubleshooting notes.
 
 ## Milestone: v0.1.1 (Weeks 1-4) — Reliability & Test hardening
 - [ ] Week 1: Baseline error-path audit for `build` and `test` command flows.
