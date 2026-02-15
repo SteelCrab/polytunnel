@@ -2,6 +2,23 @@
 
 This roadmap is based on workspace version **0.1.0** and is split into a 12-week plan with three milestones.
 
+## Historical Completed Work (Past Commits & Branches)
+- [x] `feat/build-progress-bar` — progress bar and concurrent download orchestration.
+- [x] `test/resolver` / `test/polytunnel-maven` — resolver, transitive dependency, and Maven client test hardening.
+- [x] `test/commands-coverage` — command-level error-path and coverage gap closure for CLI modules.
+- [x] `ci/codecov` — CI coverage pipeline stabilization and threshold tuning.
+- [x] `docs/add-roadmap` — first roadmap draft and baseline planning docs.
+- [x] `docs/update-roadmap-parallel` — roadmap refresh for implemented parallelism features.
+- [x] `docs/simplify-readme` — README readability and command list cleanup.
+- [x] `feat/error-reporting` — centralized runtime error reporting flow.
+- [x] `feat/windows-arm64-support` — platform support updates for ARM64 on Windows.
+- [x] `feat/refactor-resolve` — dependency resolver refactoring and maintenance improvements.
+- [x] `fix/transitive-dependency-resolution` — transitive resolution correctness fixes.
+- [x] `fix/ci-workflow-improvements` — CI reliability improvements.
+- [x] `chore/license-apache-2.0` — repository licensing transition and docs alignment.
+- [x] `chore/setup-precommit` — pre-commit tooling baseline.
+- [x] `ci/codecov` + `test-coverage` — test instrumentation and coverage workflow modernization.
+
 ## Milestone: v0.1.0 (In Progress)
 - [x] Week 1: Initial command set shipped (`init`, `build`, `test`).
 - [ ] Week 2: Baseline release packaging and repository publication preparation.

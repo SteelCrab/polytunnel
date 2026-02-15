@@ -2,6 +2,23 @@
 
 이 로드맵은 워크스페이스 버전 **0.1.0** 기준으로 12주 간 3개 마일스톤과 1주차 단위 실행 항목으로 구성했습니다.
 
+## 과거 커밋/브랜치 기준 완료 작업
+- [x] `feat/build-progress-bar` — 진행률 표시와 병렬 다운로드 오케스트레이션 적용.
+- [x] `test/resolver`, `test/polytunnel-maven` — resolver/전이 의존성/ Maven 클라이언트 테스트 강화.
+- [x] `test/commands-coverage` — CLI 모듈의 에러 경로와 커버리지 미싱 구간 정리.
+- [x] `ci/codecov` — CI 커버리지 파이프라인 및 임계값 튜닝.
+- [x] `docs/add-roadmap` — 초기 로드맵 초안 및 기초 계획 문서화.
+- [x] `docs/update-roadmap-parallel` — 구현 완료된 병렬 처리 항목 기준으로 로드맵 업데이트.
+- [x] `docs/simplify-readme` — README 가독성 개선 및 명령어 목록 정비.
+- [x] `feat/error-reporting` — 중앙 집중 오류 리포팅 플로우 추가.
+- [x] `feat/windows-arm64-support` — Windows ARM64 플랫폼 지원 반영.
+- [x] `feat/refactor-resolve` — 의존성 해석 흐름 리팩터링.
+- [x] `fix/transitive-dependency-resolution` — 전이 의존성 해석 수정.
+- [x] `fix/ci-workflow-improvements` — CI 신뢰성 개선.
+- [x] `chore/license-apache-2.0` — 라이선스 변경 및 문서 정합성 정비.
+- [x] `chore/setup-precommit` — pre-commit 툴 체인 구성.
+- [x] `ci/codecov` + `test-coverage` — 테스트 계측/커버리지 워크플로우 현대화.
+
 ## 마일스톤: v0.1.0 (진행중)
 - [x] 1주차: 초기 동작 명령어 출고 (`init`, `build`, `test`)
 - [ ] 2주차: 기준 릴리즈 패키지 및 공개 준비 진행
