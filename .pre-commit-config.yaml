@@ -1,8 +1,13 @@
 repos:
-  - repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
     hooks:
-      - id: polytunnel-pre-commit
-        name: Polytunnel pre-commit checks
-        entry: .githooks/pre-commit
-        language: script
-        pass_filenames: false
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        args: ["--", "--check"]
+      - id: clippy
