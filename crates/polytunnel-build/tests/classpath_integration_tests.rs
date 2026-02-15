@@ -3,6 +3,7 @@ use polytunnel_core::{BuildConfig, Dependency, ProjectConfig, ProjectInfo};
 use polytunnel_maven::Coordinate;
 use std::collections::HashMap;
 use std::fs;
+use std::io::ErrorKind;
 use tempfile::tempdir;
 
 fn config_with_invalid_dependency() -> ProjectConfig {
@@ -156,4 +157,32 @@ async fn test_build_classpath_from_resolved_tree_handles_all_scopes() {
     assert_eq!(cached.compile_classpath.len(), 4);
     assert_eq!(cached.test_classpath.len(), 6);
     assert_eq!(cached.runtime_classpath.len(), 4);
+}
+
+#[test]
+fn test_map_resolver_error_variants_are_stable() {
+    let io_error =
+        polytunnel_resolver::ResolverError::Io(std::io::Error::new(ErrorKind::NotFound, "missing"));
+    let mapped = ClasspathBuilder::map_resolver_error_for_tests(io_error);
+    assert!(matches!(mapped, polytunnel_build::BuildError::Io(_)));
+
+    let maven_error =
+        polytunnel_resolver::ResolverError::Maven(polytunnel_maven::MavenError::ArtifactNotFound {
+            coordinate: "org.test:lib:1.0.0".to_string(),
+        });
+    let mapped = ClasspathBuilder::map_resolver_error_for_tests(maven_error);
+    assert!(matches!(mapped, polytunnel_build::BuildError::Maven(_)));
+
+    let config_error =
+        polytunnel_resolver::ResolverError::Config(polytunnel_core::CoreError::ConfigNotFound {
+            path: "polytunnel.toml".to_string(),
+        });
+    let mapped = ClasspathBuilder::map_resolver_error_for_tests(config_error);
+    assert!(matches!(mapped, polytunnel_build::BuildError::Core(_)));
+
+    let other_error = polytunnel_resolver::ResolverError::DependencyNotFound {
+        coordinate: "org.test:missing:1.0.0".to_string(),
+    };
+    let mapped = ClasspathBuilder::map_resolver_error_for_tests(other_error);
+    assert!(matches!(mapped, polytunnel_build::BuildError::Resolver(_)));
 }
