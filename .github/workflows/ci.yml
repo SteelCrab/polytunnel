@@ -249,6 +249,7 @@ jobs:
   # Job 9: Build release binary on Linux
   release-linux:
     name: Release Build (Linux x86_64)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -271,6 +272,7 @@ jobs:
   # Job 10: Build release binary on macOS aarch64 (Apple Silicon)
   release-macos-aarch64:
     name: Release Build (macOS aarch64)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -297,6 +299,7 @@ jobs:
   # Job 11: Build release binary on Windows
   release-windows:
     name: Release Build (Windows x86_64)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
