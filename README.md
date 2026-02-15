@@ -1,6 +1,8 @@
 # Polytunnel
 
-[한국어](README_KR.md) | [CI](../../actions) | [Codecov](https://codecov.io/gh/SteelCrab/polytunnel)
+[![codecov](https://codecov.io/gh/SteelCrab/polytunnel/graph/badge.svg?branch=main)](https://codecov.io/gh/SteelCrab/polytunnel?branch=main)
+[![한국어](https://img.shields.io/badge/lang-한국어-blue.svg)](README_KR.md)
+[![CI](https://github.com/SteelCrab/polytunnel/workflows/CI/badge.svg)](../../actions)
 
 Fast Java dependency manager written in Rust (uv/ruff style).
 
