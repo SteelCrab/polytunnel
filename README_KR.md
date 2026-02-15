@@ -1,5 +1,7 @@
 # Polytunnel
 
+[Roadmap](ROADMAP.md) | [로드맵](ROADMAP_KR.md)
+
 Rust로 작성된 빠른 Java 의존성 관리 도구 (uv/ruff 스타일).
 
 ## 기능
@@ -84,6 +86,7 @@ url = "https://repo1.maven.org/maven2/"
 | `pt init` | 프로젝트 초기화 | 작동 |
 | `pt build` | 컴파일 및 테스트 | 작동 |
 | `pt test` | 테스트만 실행 | 작동 |
+| `pt run` | 애플리케이션 실행 엔트리포인트 실행 | 계획 |
 | `pt add` | 의존성 추가 | 계획 |
 | `pt remove` | 의존성 제거 | 계획 |
 | `pt sync` | 의존성 동기화 | 계획 |
