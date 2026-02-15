@@ -159,6 +159,28 @@ async fn test_build_classpath_from_resolved_tree_handles_all_scopes() {
     assert_eq!(cached.runtime_classpath.len(), 4);
 }
 
+#[tokio::test]
+async fn test_build_classpath_from_resolved_tree_creates_missing_cache_dir() {
+    let mut builder = ClasspathBuilder::new(config_with_scoped_dependencies());
+    let temp = tempdir().unwrap();
+    let cache_path = temp.path().join("missing-cache");
+
+    assert!(!cache_path.exists());
+    let result = builder
+        .build_classpath_from_resolved_tree_for_tests(
+            cache_path.to_str().unwrap(),
+            Vec::new(),
+            false,
+        )
+        .await
+        .expect("empty dependency set should build without network");
+
+    assert!(cache_path.exists());
+    assert!(result.compile_classpath.is_empty());
+    assert!(result.test_classpath.is_empty());
+    assert!(result.runtime_classpath.is_empty());
+}
+
 #[test]
 fn test_map_resolver_error_variants_are_stable() {
     let io_error =
