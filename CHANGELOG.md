@@ -4,7 +4,8 @@ All notable changes to this project will be documented here.
 
 ## ✨ [Unreleased]
 
-- Pending.
+- Added baseline non-container release artifact specification (`package-spec.md`) and linked it from release guidance sections in `README.md` and `README_KR.md`.
+- Expanded `ROADMAP.md` / `ROADMAP_KR.md` Week 2 checklist with executable release-package criteria (artifact naming, checksum policy, target matrix, install flow).
 
 ## 🚀 [0.1.0] - 초기 릴리즈
 
