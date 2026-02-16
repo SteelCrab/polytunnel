@@ -23,6 +23,7 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 - [x] Week 1: Initial command set shipped (`init`, `build`, `test`).
 - [ ] Week 2: Baseline release packaging and repository publication preparation.
   - Define release package requirements for the non-container distribution path (artifact type, naming, checksums, minimum install steps).
+  - Define minimum supported target matrix for baseline release: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64.
   - Decide repository publication contents (binary, source examples, compatibility notes, signatures).
   - Keep README/docs focused on crate/CLI usage, and prepare container coverage in v0.2.0.
 - [ ] Week 3: CI/build/test matrix stabilization for initial release.
