@@ -1,7 +1,7 @@
 # Continuous Integration workflow for Polytunnel
 #
 # This workflow runs on every push and pull request to ensure code quality across
-# multiple platforms (macOS, Windows, Linux) and architectures (x86_64, aarch64).
+# multiple platforms (macOS, Windows, Linux) and architectures (x86_64, aarch64, linux-musl).
 # It performs:
 # 1. Build verification on all supported platforms
 # 2. Unit tests
