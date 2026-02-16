@@ -69,6 +69,7 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 - [ ] Week 7: Add tests for lockless and partially synced states.
 - [ ] Week 8: Implement `pt tree` command and formatting output.
 - [ ] Week 8: Implement `pt run` command for running user-specified entry points.
+- [ ] Week 8: Add `pt <-> gradlew` migration story with opt-in compatibility mode and clear mapping of equivalent commands/options.
 - [ ] Week 8: Add docs for command usage and exit-code expectations.
 - [ ] Dependencies: Resolver + Maven client contracts, CLI command parsing.
 
@@ -84,6 +85,9 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
   - Render dependency graph with indentation and scopes (`compile`/`test`/`runtime`).
 - `pt run`:
   - Resolve main class candidate from project metadata and execute generated classes with JVM args.
+- `pt` <-> `gradlew` migration:
+  - Keep behavior mapping explicit for common invocations (`build`, `test`, `run`) and capture a compatibility matrix.
+  - Add a one-way migration checklist (`gradlew` -> `pt`) and reverse path for mixed toolchain transitions.
 - Quality gates:
   - Add positive/negative tests for each command; assert non-zero exit codes with message checks.
 
