@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## ✨ [Unreleased]
 
 - Pending.
 
-## [0.1.0] - Unreleased
+## 🚀 [0.1.0] - Release
 
 ### Added
 - Workspace-based multi-crate structure for core CLI, Maven client, resolver, build engine, and IDE helpers.
