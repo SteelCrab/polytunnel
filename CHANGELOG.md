@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 - Pending.
 
-## 🚀 [0.1.0] - Release
+## 🚀 [0.1.0] - 초기 릴리즈
 
 ### Added
 - Workspace-based multi-crate structure for core CLI, Maven client, resolver, build engine, and IDE helpers.
