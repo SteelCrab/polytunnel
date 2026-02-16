@@ -7,7 +7,7 @@
 [x] 2주차: 기준 릴리즈 패키지 및 공개 준비 진행
   [x] `/package-spec.md`에 비컨테이너 배포 산출물 사양을 문서화한다.
   [x] `/package-spec.md`에 아티팩트 형식, 파일명 규칙, 체크섬 정책, 설치 절차를 정의한다.
-  [x] `/package-spec.md`에 기준 플랫폼을 확정한다: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64.
+  [x] `/package-spec.md`에 기준 플랫폼을 확정한다: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64 (windows-arm64는 v0.2.0에서 추적).
   [x] `/package-spec.md`에 공개 산출물 항목(바이너리, 예시 프로젝트, 호환성 안내, 서명 정책)을 정의한다.
   [x] README/README_KR에 체크섬 검증 기반 설치 절차를 반영한다.
   [x] 컨테이너 배포는 v0.2.0 항목에서만 처리하고 현재는 비컨테이너 배포 기준만 확정한다.
@@ -43,6 +43,8 @@
 [ ] 10주차: `CHANGELOG` 골격 및 릴리스 노트 템플릿 정비
 [ ] 10주차: 업그레이드 가이드 초안 작성
 [ ] 10주차: CI 기반 다중 아키텍처 이미지 빌드/푸시(`linux/amd64`, `linux/arm64`) 및 태그 전략 정립
+[ ] 10주차: 비컨테이너 `windows-arm64` 릴리즈 산출물(`polytunnel-<version>-windows-arm64.zip`) 타깃 및 파일명 규칙 확정
+[ ] 10주차: `windows-arm64` 빌드, 체크섬 생성, 퍼블리시 검증을 포함하도록 릴리즈 CI 매트릭스 확장
 [ ] 11주차: 재현성 검사 및 캐시 무효화 진단 강화
 [ ] 11주차: 신규 기여자 환경에서 온보딩 검증
 [ ] 11주차: 컨테이너 런타임 Smoke 테스트(`docker run --rm <image> --help`, 버전 출력, 샘플 빌드) 추가
@@ -50,4 +52,3 @@
 [ ] 12주차: 문서 동기화 최종 점검(README/ROADMAP/기능 문서)
 [ ] 12주차: 출시 준비 체크리스트 최종 승인
 [ ] 기존 기여자 문서/CI 파이프라인 연계
-
