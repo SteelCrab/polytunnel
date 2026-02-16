@@ -20,13 +20,13 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 
 ## Milestone: v0.1.0 (In Progress)
 [x] Week 1: Initial command set shipped (`init`, `build`, `test`).
-[ ] Week 2: Baseline release packaging and repository publication preparation.
-  [ ] Publish the baseline non-container distribution specification in `/package-spec.md`.
-  [ ] Define artifact format, file naming, checksum policy, and installation flow in `/package-spec.md`.
-  [ ] Confirm minimum target matrix in `/package-spec.md`: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64.
-  [ ] Define repository publication contents in `/package-spec.md` (binary, examples, compatibility notes, signatures policy).
-  [ ] Update README and README_KR release section with checksum + install verification steps.
-  [ ] Keep container distribution tasks to v0.2.0 only (container package and smoke tests).
+[x] Week 2: Baseline release packaging and repository publication preparation.
+  [x] Publish the baseline non-container distribution specification in `/package-spec.md`.
+  [x] Define artifact format, file naming, checksum policy, and installation flow in `/package-spec.md`.
+  [x] Confirm minimum target matrix in `/package-spec.md`: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64.
+  [x] Define repository publication contents in `/package-spec.md` (binary, examples, compatibility notes, signatures policy).
+  [x] Update README and README_KR release section with checksum + install verification steps.
+  [x] Keep container distribution tasks to v0.2.0 only (container package and smoke tests).
 [ ] Week 3: CI/build/test matrix stabilization for initial release.
 [ ] Week 4: Contributor-level docs and release notes finalized in README.
 
