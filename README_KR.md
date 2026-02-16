@@ -38,6 +38,31 @@ Rust로 작성된 빠른 Java 의존성 관리 도구 (uv/ruff 스타일).
 cargo install polytunnel
 ```
 
+## 배포(비컨테이너) 패키지
+
+컨테이너 배포(v0.2.0) 이전에는 GitHub Releases의 압축 산출물을 사용합니다.
+
+- 규격 문서: [`package-spec.md`](package-spec.md)
+- 파일명 예시:
+  - `polytunnel-0.1.0-linux-x86_64.tar.gz`
+  - `polytunnel-0.1.0-linux-aarch64.tar.gz`
+  - `polytunnel-0.1.0-linux-musl.tar.gz`
+  - `polytunnel-0.1.0-macos-aarch64.tar.gz`
+  - `polytunnel-0.1.0-windows-x86_64.zip`
+
+설치 예시:
+
+```bash
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/polytunnel-0.1.0-linux-x86_64.tar.gz
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+tar -xzf polytunnel-0.1.0-linux-x86_64.tar.gz
+chmod +x polytunnel
+./polytunnel --version
+```
+
+`SHA256SUMS.asc`가 제공되면 실행 전 서명 검증을 수행합니다.
+
 ## 빠른 시작
 
 ```bash

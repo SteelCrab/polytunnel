@@ -46,6 +46,31 @@ Fast Java dependency manager written in Rust (uv/ruff style).
 cargo install polytunnel
 ```
 
+## Release Package (Non-container)
+
+For releases before the container distribution, download archived artifacts from GitHub Releases.
+
+- Specification: [`package-spec.md`](package-spec.md)
+- Target examples:
+  - `polytunnel-0.1.0-linux-x86_64.tar.gz`
+  - `polytunnel-0.1.0-linux-aarch64.tar.gz`
+  - `polytunnel-0.1.0-linux-musl.tar.gz`
+  - `polytunnel-0.1.0-macos-aarch64.tar.gz`
+  - `polytunnel-0.1.0-windows-x86_64.zip`
+
+Example install flow:
+
+```bash
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/polytunnel-0.1.0-linux-x86_64.tar.gz
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+tar -xzf polytunnel-0.1.0-linux-x86_64.tar.gz
+chmod +x polytunnel
+./polytunnel --version
+```
+
+If `SHA256SUMS.asc` is provided, verify the signature before execution.
+
 ## Quick Start
 
 ```bash
