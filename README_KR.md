@@ -11,7 +11,7 @@ Rust로 작성된 빠른 Java 의존성 관리 도구 (uv/ruff 스타일).
 - **단순함**: 직관적인 CLI와 설정
 - **빌드**: javac 직접 컴파일 지원
 - **테스트**: JUnit 5/4, TestNG 자동 감지
-- **크로스 플랫폼**: Windows, macOS, Linux 지원
+- **크로스 플랫폼**: Windows x86_64, macOS aarch64, Linux x86_64, Linux aarch64, linux-musl 지원
 
 ## 비교
 
