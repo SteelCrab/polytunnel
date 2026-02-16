@@ -20,7 +20,6 @@ Fast Java dependency manager written in Rust (uv/ruff style).
 - **Build**: Direct javac compilation
 - **Test**: Auto-detect JUnit 5/4, TestNG
 - **Cross-Platform**: Windows x86_64, macOS aarch64, Linux x86_64, Linux aarch64, linux-musl
-- **Planned**: Windows ARM64 support (artifact + CI pipeline are pending).
 
 ## Comparison
 
