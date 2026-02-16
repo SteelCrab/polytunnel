@@ -22,9 +22,9 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 ## Milestone: v0.1.0 (In Progress)
 - [x] Week 1: Initial command set shipped (`init`, `build`, `test`).
 - [ ] Week 2: Baseline release packaging and repository publication preparation.
-  - Define release package requirements for container delivery (image name, tag format, supported tags).
-  - Decide release artifact set (binary in image, runtime examples, quickstart usage).
-  - Align README and docs with container run path and expected arguments.
+  - Define release package requirements for the non-container distribution path (artifact type, naming, checksums, minimum install steps).
+  - Decide repository publication contents (binary, source examples, compatibility notes, signatures).
+  - Keep README/docs focused on crate/CLI usage, and prepare container coverage in v0.2.0.
 - [ ] Week 3: CI/build/test matrix stabilization for initial release.
 - [ ] Week 4: Contributor-level docs and release notes finalized in README.
 
