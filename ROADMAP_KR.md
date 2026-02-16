@@ -11,7 +11,6 @@
 [x] `docs/update-roadmap-parallel` — 구현 완료된 병렬 처리 항목 기준으로 로드맵 업데이트.
 [x] `docs/simplify-readme` — README 가독성 개선 및 명령어 목록 정비.
 [x] `feat/error-reporting` — 중앙 집중 오류 리포팅 플로우 추가.
-[x] `feat/windows-arm64-support` — Windows ARM64 플랫폼 지원 반영.
 [x] `feat/refactor-resolve` — 의존성 해석 흐름 리팩터링.
 [x] `fix/transitive-dependency-resolution` — 전이 의존성 해석 수정.
 [x] `fix/ci-workflow-improvements` — CI 신뢰성 개선.
@@ -124,3 +123,6 @@
 - IDE 플러그인 완전 통합
 - 현재 빌드/테스트 플로우를 넘어선 대규모 캐시 아키텍처
 - 엔터프라이즈 레벨 정책 엔진
+
+## 향후 작업: Windows ARM64 지원
+[ ] Windows ARM64 타깃의 빌드/패키지/배포를 CI 포함으로 추가.

@@ -11,7 +11,6 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 [x] `docs/update-roadmap-parallel` — roadmap refresh for implemented parallelism features.
 [x] `docs/simplify-readme` — README readability and command list cleanup.
 [x] `feat/error-reporting` — centralized runtime error reporting flow.
-[x] `feat/windows-arm64-support` — platform support updates for ARM64 on Windows.
 [x] `feat/refactor-resolve` — dependency resolver refactoring and maintenance improvements.
 [x] `fix/transitive-dependency-resolution` — transitive resolution correctness fixes.
 [x] `fix/ci-workflow-improvements` — CI reliability improvements.
@@ -126,3 +125,6 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 - Full IDE plugin integration.
 - Advanced build graph caching beyond current build/test flow.
 - Enterprise repository-level policy system.
+
+## Future Work: Windows ARM64 Support
+[ ] Add native Windows ARM64 package and CI coverage.
