@@ -54,29 +54,7 @@ jobs:
       - name: Build workspace
         run: cargo build --workspace --verbose
 
-  # Job 2: Build on macOS x86_64 (cross-compile from arm64 runner)
-  build-macos-x86:
-    name: Build (macOS x86_64)
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Add x86_64 target
-        run: rustup target add x86_64-apple-darwin
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-x86_64
-
-      - name: Build workspace (x86_64)
-        run: cargo build --workspace --target x86_64-apple-darwin --verbose
-
-  # Job 3: Build on macOS aarch64 (Apple Silicon, native)
+  # Job 2: Build on macOS aarch64 (Apple Silicon, native)
   build-macos-aarch64:
     name: Build (macOS aarch64)
     runs-on: macos-latest
@@ -96,7 +74,7 @@ jobs:
       - name: Build workspace (aarch64)
         run: cargo build --workspace --verbose
 
-  # Job 4: Build on Windows x86_64
+  # Job 3: Build on Windows x86_64
   build-windows-x86:
     name: Build (Windows x86_64)
     runs-on: windows-latest
@@ -115,7 +93,7 @@ jobs:
       - name: Build workspace
         run: cargo build --workspace --verbose
 
-  # Job 5: Build for Linux aarch64 (cross-compilation)
+  # Job 4: Build for Linux aarch64 (cross-compilation)
   build-linux-aarch64:
     name: Build (Linux aarch64)
     runs-on: ubuntu-latest
@@ -146,7 +124,7 @@ jobs:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
 
-  # Job 6: Build for Linux musl x86_64 (static binary)
+  # Job 5: Build for Linux musl x86_64 (static binary)
   build-linux-musl:
     name: Build (Linux musl)
     runs-on: ubuntu-latest
@@ -171,7 +149,57 @@ jobs:
       - name: Build workspace (musl)
         run: cargo build --workspace --target x86_64-unknown-linux-musl --verbose
 
-  # Job 7: Run all unit tests (Linux only)
+  # Job 6: Build for Linux aarch64 musl (static binary on ARM, cross-compilation)
+  build-linux-aarch64-musl:
+    name: Build (Linux aarch64 musl)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cross-compilation tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu musl-tools
+
+      - name: Add aarch64 musl target
+        run: rustup target add aarch64-unknown-linux-musl
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-aarch64-musl
+
+      - name: Build workspace (aarch64 musl)
+        run: cargo build --workspace --target aarch64-unknown-linux-musl --verbose
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_musl: aarch64-linux-gnu-gcc
+
+  # Job 7: Build for Windows aarch64 (cross-compilation)
+  build-windows-aarch64:
+    name: Build (Windows aarch64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add aarch64 target
+        run: rustup target add aarch64-pc-windows-msvc
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-windows-aarch64
+
+      - name: Build workspace (aarch64)
+        run: cargo build --workspace --target aarch64-pc-windows-msvc --verbose
+
+  # Job 8: Run all unit tests (Linux only)
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -195,7 +223,7 @@ jobs:
       - name: Run doc tests
         run: cargo test --doc --workspace --verbose
 
-  # Job 8: Code linting with Clippy
+  # Job 9: Code linting with Clippy
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -216,7 +244,7 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-  # Job 9: Code formatting check
+  # Job 10: Code formatting check
   fmt:
     name: Format
     runs-on: ubuntu-latest
@@ -231,7 +259,7 @@ jobs:
       - name: Check code formatting
         run: cargo fmt --check
 
-  # Job 10: Build release binary on Linux x86_64
+  # Job 11: Build release binary on Linux x86_64
   release-linux:
     name: Release Build (Linux x86_64)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -267,7 +295,7 @@ jobs:
           name: polytunnel-linux-x86_64
           path: polytunnel-*.tar.gz
 
-  # Job 11: Build release binary on Linux aarch64
+  # Job 12: Build release binary on Linux aarch64
   release-linux-aarch64:
     name: Release Build (Linux aarch64)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -312,7 +340,7 @@ jobs:
           name: polytunnel-linux-aarch64
           path: polytunnel-*.tar.gz
 
-  # Job 12: Build release binary on Linux musl x86_64 (static binary)
+  # Job 13: Build release binary on Linux musl x86_64 (static binary)
   release-linux-musl:
     name: Release Build (Linux musl)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -353,7 +381,7 @@ jobs:
           name: polytunnel-linux-musl
           path: polytunnel-*.tar.gz
 
-  # Job 13: Build release binary on Linux aarch64 musl (static binary on ARM)
+  # Job 14: Build release binary on Linux aarch64 musl (static binary on ARM)
   release-linux-aarch64-musl:
     name: Release Build (Linux aarch64 musl)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -397,7 +425,7 @@ jobs:
           name: polytunnel-linux-aarch64-musl
           path: polytunnel-*.tar.gz
 
-  # Job 14: Build release binary on macOS aarch64 (Apple Silicon)
+  # Job 15: Build release binary on macOS aarch64 (Apple Silicon)
   release-macos-aarch64:
     name: Release Build (macOS aarch64)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -437,7 +465,7 @@ jobs:
           name: polytunnel-macos-aarch64
           path: polytunnel-*.tar.gz
 
-  # Job 15: Build release binary on Windows x86_64
+  # Job 16: Build release binary on Windows x86_64
   release-windows:
     name: Release Build (Windows x86_64)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -472,9 +500,9 @@ jobs:
           name: polytunnel-windows-x86_64
           path: polytunnel-*.zip
 
-  # Job 16: Build release binary on Windows ARM64
-  release-windows-arm64:
-    name: Release Build (Windows ARM64)
+  # Job 17: Build release binary on Windows aarch64
+  release-windows-aarch64:
+    name: Release Build (Windows aarch64)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: windows-latest
     steps:
@@ -490,7 +518,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: windows-arm64-release
+          prefix-key: windows-aarch64-release
 
       - name: Build release binary (ARM64)
         run: cargo build --workspace --release --target aarch64-pc-windows-msvc --verbose
@@ -502,15 +530,15 @@ jobs:
           New-Item -ItemType Directory -Force dist
           Copy-Item target\aarch64-pc-windows-msvc\release\polytunnel.exe, README.md, README_KR.md, LICENSE dist\
           Copy-Item examples dist\ -Recurse
-          Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-arm64.zip"
+          Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-aarch64.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: polytunnel-windows-arm64
+          name: polytunnel-windows-aarch64
           path: polytunnel-*.zip
 
-  # Job 17: Code coverage with llvm-cov
+  # Job 18: Code coverage with llvm-cov
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
@@ -546,7 +574,7 @@ jobs:
           files: ./lcov.info
           fail_ci_if_error: false
 
-  # Job 18: Security audit
+  # Job 19: Security audit
   security:
     name: Security Audit
     runs-on: ubuntu-latest
@@ -563,7 +591,7 @@ jobs:
       - name: Run security audit
         run: cargo audit
 
-  # Job 19: Generate SHA256SUMS from all release artifacts
+  # Job 20: Generate SHA256SUMS from all release artifacts
   checksum:
     name: Generate SHA256SUMS
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
@@ -574,7 +602,7 @@ jobs:
       - release-linux-aarch64-musl
       - release-macos-aarch64
       - release-windows
-      - release-windows-arm64
+      - release-windows-aarch64
     runs-on: ubuntu-latest
     steps:
       - name: Download all release artifacts
