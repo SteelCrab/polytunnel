@@ -54,7 +54,7 @@ jobs:
       - name: Build workspace
         run: cargo build --workspace --verbose
 
-  # Job 2: Build on macOS x86_64
+  # Job 2: Build on macOS x86_64 (cross-compile from arm64 runner)
   build-macos-x86:
     name: Build (macOS x86_64)
     runs-on: macos-latest
@@ -65,16 +65,18 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Add x86_64 target
+        run: rustup target add x86_64-apple-darwin
+
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
         with:
           prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-macos-x86_64
 
-      - name: Build workspace
-        run: cargo build --workspace --verbose
+      - name: Build workspace (x86_64)
+        run: cargo build --workspace --target x86_64-apple-darwin --verbose
 
-  # Job 3: Build on macOS aarch64 (Apple Silicon)
-  # No need to add aarch64 target - it's the native architecture
+  # Job 3: Build on macOS aarch64 (Apple Silicon, native)
   build-macos-aarch64:
     name: Build (macOS aarch64)
     runs-on: macos-latest
@@ -144,7 +146,7 @@ jobs:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
 
-  # Job 6: Build for Linux musl (static)
+  # Job 6: Build for Linux musl x86_64 (static binary)
   build-linux-musl:
     name: Build (Linux musl)
     runs-on: ubuntu-latest
@@ -185,7 +187,6 @@ jobs:
         with:
           prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-linux-test
 
-
       # Run tests with output (don't stop on first failure)
       - name: Run tests
         run: cargo test --workspace --verbose
@@ -194,7 +195,7 @@ jobs:
       - name: Run doc tests
         run: cargo test --doc --workspace --verbose
 
-  # Job 7: Code linting with Clippy
+  # Job 8: Code linting with Clippy
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -215,7 +216,7 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-  # Job 8: Code formatting check
+  # Job 9: Code formatting check
   fmt:
     name: Format
     runs-on: ubuntu-latest
@@ -230,10 +231,10 @@ jobs:
       - name: Check code formatting
         run: cargo fmt --check
 
-  # Job 9: Build release binary on Linux
+  # Job 10: Build release binary on Linux x86_64
   release-linux:
     name: Release Build (Linux x86_64)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -251,10 +252,95 @@ jobs:
       - name: Build release binary
         run: cargo build --workspace --release --verbose
 
-  # Job 10: Build release binary on macOS aarch64 (Apple Silicon)
+  # Job 11: Build release binary on Linux aarch64
+  release-linux-aarch64:
+    name: Release Build (Linux aarch64)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add aarch64 target
+        run: rustup target add aarch64-unknown-linux-gnu
+
+      - name: Install aarch64 cross-compilation tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: linux-aarch64-release
+
+      - name: Build release binary (aarch64)
+        run: cargo build --workspace --release --target aarch64-unknown-linux-gnu --verbose
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+
+  # Job 12: Build release binary on Linux musl x86_64 (static binary)
+  release-linux-musl:
+    name: Release Build (Linux musl)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install musl-tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: linux-musl-release
+
+      - name: Build release binary (musl)
+        run: cargo build --workspace --release --target x86_64-unknown-linux-musl --verbose
+
+  # Job 13: Build release binary on Linux aarch64 musl (static binary on ARM)
+  release-linux-aarch64-musl:
+    name: Release Build (Linux aarch64 musl)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cross-compilation tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu musl-tools
+
+      - name: Add aarch64 musl target
+        run: rustup target add aarch64-unknown-linux-musl
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: linux-aarch64-musl-release
+
+      - name: Build release binary (aarch64 musl)
+        run: cargo build --workspace --release --target aarch64-unknown-linux-musl --verbose
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_musl: aarch64-linux-gnu-gcc
+
+  # Job 14: Build release binary on macOS aarch64 (Apple Silicon)
   release-macos-aarch64:
     name: Release Build (macOS aarch64)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -276,10 +362,10 @@ jobs:
       - name: Build release binary (aarch64)
         run: cargo build --workspace --release --target aarch64-apple-darwin --verbose
 
-  # Job 11: Build release binary on Windows
+  # Job 15: Build release binary on Windows x86_64
   release-windows:
     name: Release Build (Windows x86_64)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -296,7 +382,30 @@ jobs:
       - name: Build release binary
         run: cargo build --workspace --release --verbose
 
-  # Job 12: Code coverage with llvm-cov
+  # Job 16: Build release binary on Windows ARM64
+  release-windows-arm64:
+    name: Release Build (Windows ARM64)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add ARM64 target
+        run: rustup target add aarch64-pc-windows-msvc
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: windows-arm64-release
+
+      - name: Build release binary (ARM64)
+        run: cargo build --workspace --release --target aarch64-pc-windows-msvc --verbose
+
+  # Job 17: Code coverage with llvm-cov
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
@@ -318,8 +427,7 @@ jobs:
       - name: Install llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov
-          version: 0.8.4
+          tool: cargo-llvm-cov@0.8.4
 
       # Generate code coverage report
       - name: Generate code coverage
@@ -332,3 +440,20 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./lcov.info
           fail_ci_if_error: false
+
+  # Job 18: Security audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run security audit
+        run: cargo audit
