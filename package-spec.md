@@ -17,7 +17,8 @@ distribution (`v0.2.0`) is introduced.
 Supported baseline targets are:
 - `linux-x86_64`
 - `linux-aarch64`
-- `linux-musl`
+- `linux-musl` (`x86_64-unknown-linux-musl`)
+- `linux-aarch64-musl` (`aarch64-unknown-linux-musl`)
 - `macos-aarch64`
 - `windows-x86_64`
 - `windows-arm64`
@@ -29,6 +30,7 @@ Supported baseline targets are:
   - `polytunnel-0.1.0-linux-x86_64.tar.gz`
   - `polytunnel-0.1.0-linux-aarch64.tar.gz`
   - `polytunnel-0.1.0-linux-musl.tar.gz`
+  - `polytunnel-0.1.0-linux-aarch64-musl.tar.gz`
   - `polytunnel-0.1.0-macos-aarch64.tar.gz`
   - `polytunnel-0.1.0-windows-x86_64.zip`
   - `polytunnel-0.1.0-windows-arm64.zip`
