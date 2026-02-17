@@ -20,6 +20,7 @@ Supported baseline targets are:
 - `linux-musl`
 - `macos-aarch64`
 - `windows-x86_64`
+- `windows-arm64`
 
 ## 3. File naming
 - Base pattern: `polytunnel-<version>-<target>.<ext>`
@@ -30,6 +31,7 @@ Supported baseline targets are:
   - `polytunnel-0.1.0-linux-musl.tar.gz`
   - `polytunnel-0.1.0-macos-aarch64.tar.gz`
   - `polytunnel-0.1.0-windows-x86_64.zip`
+  - `polytunnel-0.1.0-windows-arm64.zip`
 
 ## 4. Integrity policy
 - `SHA256SUMS` is required for every release.

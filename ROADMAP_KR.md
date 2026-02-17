@@ -12,6 +12,9 @@
   [x] README/README_KR에 체크섬 검증 기반 설치 절차를 반영한다.
   [x] 컨테이너 배포는 v0.2.0 항목에서만 처리하고 현재는 비컨테이너 배포 기준만 확정한다.
 [ ] 3주차: CI/빌드/테스트 매트릭스 출시 기준 안정화
+  [ ] `package-spec.md`에 windows-arm64 비컨테이너 릴리즈 산출물(`polytunnel-<version>-windows-arm64.zip`) 타깃 및 파일명 규칙 추가
+  [ ] windows-arm64 빌드, 체크섬 생성, 퍼블리시 검증을 포함하도록 릴리즈 CI 매트릭스 확장
+  [ ] 6개 플랫폼 빌드 매트릭스 전체 안정화 (linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64, windows-arm64)
 [ ] 4주차: README 릴리즈 노트/문서 정비
 
 ## 마일스톤: v0.1.1 (1~4주차) — 신뢰성 및 테스트 강화
@@ -43,8 +46,6 @@
 [ ] 10주차: `CHANGELOG` 골격 및 릴리스 노트 템플릿 정비
 [ ] 10주차: 업그레이드 가이드 초안 작성
 [ ] 10주차: CI 기반 다중 아키텍처 이미지 빌드/푸시(`linux/amd64`, `linux/arm64`) 및 태그 전략 정립
-[ ] 10주차: 비컨테이너 `windows-arm64` 릴리즈 산출물(`polytunnel-<version>-windows-arm64.zip`) 타깃 및 파일명 규칙 확정
-[ ] 10주차: `windows-arm64` 빌드, 체크섬 생성, 퍼블리시 검증을 포함하도록 릴리즈 CI 매트릭스 확장
 [ ] 11주차: 재현성 검사 및 캐시 무효화 진단 강화
 [ ] 11주차: 신규 기여자 환경에서 온보딩 검증
 [ ] 11주차: 컨테이너 런타임 Smoke 테스트(`docker run --rm <image> --help`, 버전 출력, 샘플 빌드) 추가

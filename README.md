@@ -19,8 +19,7 @@ Fast Java dependency manager written in Rust (uv/ruff style).
 - **Simple**: Intuitive CLI and configuration
 - **Build**: Direct javac compilation
 - **Test**: Auto-detect JUnit 5/4, TestNG
-- **Cross-Platform**: Windows x86_64, macOS aarch64, Linux x86_64, Linux aarch64, linux-musl
-- **Planned Platform**: Windows ARM64 artifact + CI release pipeline (tracked in `ROADMAP.md` v0.2.0 Week 10)
+- **Cross-Platform**: Windows x86_64, Windows ARM64, macOS aarch64, Linux x86_64, Linux aarch64, linux-musl
 
 ## Comparison
 
@@ -58,8 +57,7 @@ For releases before the container distribution, download archived artifacts from
   - `polytunnel-0.1.0-linux-musl.tar.gz`
   - `polytunnel-0.1.0-macos-aarch64.tar.gz`
   - `polytunnel-0.1.0-windows-x86_64.zip`
-- Planned target:
-  - `polytunnel-<version>-windows-arm64.zip` (planned in v0.2.0 release matrix)
+  - `polytunnel-0.1.0-windows-arm64.zip`
 
 Example install flow:
 
