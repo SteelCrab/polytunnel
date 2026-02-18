@@ -734,11 +734,26 @@ jobs:
               --jq '.body')
           fi
 
+          # Add icons to GitHub-generated sections
+          GENERATED=$(echo "${GENERATED}" \
+            | sed "s/^## What's Changed/## 🔄 What's Changed/" \
+            | sed "s/^## New Contributors/## 🎉 New Contributors/" \
+            | sed "s/^\*\*Full Changelog\*\*/📋 **Full Changelog**/")
+
+          # Extract current version section from CHANGELOG.md
+          CHANGELOG=$(awk "/^## .*\\[${TAG}\\]/{found=1; next} found && /^## .*\\[v/{exit} found" CHANGELOG.md)
+
           # Build release body
           {
             echo "${GENERATED}"
             echo ""
-            echo "## Download"
+            if [ -n "$CHANGELOG" ]; then
+              echo "## 📝 Changelog"
+              echo ""
+              echo "${CHANGELOG}"
+              echo ""
+            fi
+            echo "## 📦 Download"
             echo ""
             echo "| Platform | Architecture | File |"
             echo "|----------|-------------|------|"
@@ -750,7 +765,7 @@ jobs:
             echo "| Windows | x86_64 | \`polytunnel-${VERSION}-windows-x86_64.zip\` |"
             echo "| Windows | aarch64 | \`polytunnel-${VERSION}-windows-aarch64.zip\` |"
             echo ""
-            echo "## Binary (no extraction needed)"
+            echo "## ⚡ Binary (no extraction needed)"
             echo ""
             echo "| Platform | Architecture | File |"
             echo "|----------|-------------|------|"
@@ -762,7 +777,7 @@ jobs:
             echo "| Windows | x86_64 | \`pt-windows-x86_64.exe\` |"
             echo "| Windows | aarch64 | \`pt-windows-aarch64.exe\` |"
             echo ""
-            echo "## Verify checksums"
+            echo "## 🔐 Verify checksums"
             echo ""
             echo "\`\`\`bash"
             echo "sha256sum -c SHA256SUMS"
