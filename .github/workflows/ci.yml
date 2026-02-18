@@ -285,7 +285,7 @@ jobs:
           VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(next(p['version'] for p in d['packages'] if p['name']=='polytunnel'))")
           TARGET=linux-x86_64
           mkdir -p dist
-          cp target/release/polytunnel README.md README_KR.md LICENSE dist/
+          cp target/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
 
@@ -330,7 +330,7 @@ jobs:
           VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(next(p['version'] for p in d['packages'] if p['name']=='polytunnel'))")
           TARGET=linux-aarch64
           mkdir -p dist
-          cp target/aarch64-unknown-linux-gnu/release/polytunnel README.md README_KR.md LICENSE dist/
+          cp target/aarch64-unknown-linux-gnu/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
 
@@ -371,7 +371,7 @@ jobs:
           VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(next(p['version'] for p in d['packages'] if p['name']=='polytunnel'))")
           TARGET=linux-musl
           mkdir -p dist
-          cp target/x86_64-unknown-linux-musl/release/polytunnel README.md README_KR.md LICENSE dist/
+          cp target/x86_64-unknown-linux-musl/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
 
@@ -415,7 +415,7 @@ jobs:
           VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(next(p['version'] for p in d['packages'] if p['name']=='polytunnel'))")
           TARGET=linux-aarch64-musl
           mkdir -p dist
-          cp target/aarch64-unknown-linux-musl/release/polytunnel README.md README_KR.md LICENSE dist/
+          cp target/aarch64-unknown-linux-musl/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
 
@@ -455,7 +455,7 @@ jobs:
           VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(next(p['version'] for p in d['packages'] if p['name']=='polytunnel'))")
           TARGET=macos-aarch64
           mkdir -p dist
-          cp target/aarch64-apple-darwin/release/polytunnel README.md README_KR.md LICENSE dist/
+          cp target/aarch64-apple-darwin/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
 
@@ -490,7 +490,7 @@ jobs:
         run: |
           $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object { $_.name -eq 'polytunnel' } | Select-Object -ExpandProperty version
           New-Item -ItemType Directory -Force dist
-          Copy-Item target\release\polytunnel.exe, README.md, README_KR.md, LICENSE dist\
+          Copy-Item target\release\pt.exe, README.md, README_KR.md, LICENSE dist\
           Copy-Item examples dist\ -Recurse
           Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-x86_64.zip"
 
@@ -528,7 +528,7 @@ jobs:
         run: |
           $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages | Where-Object { $_.name -eq 'polytunnel' } | Select-Object -ExpandProperty version
           New-Item -ItemType Directory -Force dist
-          Copy-Item target\aarch64-pc-windows-msvc\release\polytunnel.exe, README.md, README_KR.md, LICENSE dist\
+          Copy-Item target\aarch64-pc-windows-msvc\release\pt.exe, README.md, README_KR.md, LICENSE dist\
           Copy-Item examples dist\ -Recurse
           Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-aarch64.zip"
 
