@@ -291,12 +291,19 @@ jobs:
           cp target/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
+          cp target/release/pt pt-${TARGET}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-linux-x86_64
           path: polytunnel-*.tar.gz
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-linux-x86_64
+          path: pt-linux-x86_64
 
   # Job 12: Build release binary on Linux aarch64
   release-linux-aarch64:
@@ -336,12 +343,19 @@ jobs:
           cp target/aarch64-unknown-linux-gnu/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
+          cp target/aarch64-unknown-linux-gnu/release/pt pt-${TARGET}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-linux-aarch64
           path: polytunnel-*.tar.gz
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-linux-aarch64
+          path: pt-linux-aarch64
 
   # Job 13: Build release binary on Linux musl x86_64 (static binary)
   release-linux-musl:
@@ -377,12 +391,19 @@ jobs:
           cp target/x86_64-unknown-linux-musl/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
+          cp target/x86_64-unknown-linux-musl/release/pt pt-${TARGET}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-linux-musl
           path: polytunnel-*.tar.gz
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-linux-musl
+          path: pt-linux-musl
 
   # Job 14: Build release binary on Linux aarch64 musl (static binary on ARM)
   release-linux-aarch64-musl:
@@ -421,12 +442,19 @@ jobs:
           cp target/aarch64-unknown-linux-musl/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
+          cp target/aarch64-unknown-linux-musl/release/pt pt-${TARGET}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-linux-aarch64-musl
           path: polytunnel-*.tar.gz
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-linux-aarch64-musl
+          path: pt-linux-aarch64-musl
 
   # Job 15: Build release binary on macOS aarch64 (Apple Silicon)
   release-macos-aarch64:
@@ -461,12 +489,19 @@ jobs:
           cp target/aarch64-apple-darwin/release/pt README.md README_KR.md LICENSE dist/
           cp -r examples dist/
           tar -czf polytunnel-${VERSION}-${TARGET}.tar.gz -C dist .
+          cp target/aarch64-apple-darwin/release/pt pt-${TARGET}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-macos-aarch64
           path: polytunnel-*.tar.gz
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-macos-aarch64
+          path: pt-macos-aarch64
 
   # Job 16: Build release binary on Windows x86_64
   release-windows:
@@ -496,12 +531,19 @@ jobs:
           Copy-Item target\release\pt.exe, README.md, README_KR.md, LICENSE dist\
           Copy-Item examples dist\ -Recurse
           Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-x86_64.zip"
+          Copy-Item target\release\pt.exe pt-windows-x86_64.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-windows-x86_64
           path: polytunnel-*.zip
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-windows-x86_64
+          path: pt-windows-x86_64.exe
 
   # Job 17: Build release binary on Windows aarch64
   release-windows-aarch64:
@@ -534,12 +576,19 @@ jobs:
           Copy-Item target\aarch64-pc-windows-msvc\release\pt.exe, README.md, README_KR.md, LICENSE dist\
           Copy-Item examples dist\ -Recurse
           Compress-Archive -Path dist\* -DestinationPath "polytunnel-$version-windows-aarch64.zip"
+          Copy-Item target\aarch64-pc-windows-msvc\release\pt.exe pt-windows-aarch64.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: polytunnel-windows-aarch64
           path: polytunnel-*.zip
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pt-windows-aarch64
+          path: pt-windows-aarch64.exe
 
   # Job 18: Code coverage with llvm-cov
   coverage:
@@ -617,7 +666,7 @@ jobs:
       - name: Generate SHA256SUMS
         run: |
           cd artifacts
-          sha256sum polytunnel-* > SHA256SUMS
+          sha256sum polytunnel-* pt-* > SHA256SUMS
           cat SHA256SUMS
 
       - name: Upload SHA256SUMS
@@ -652,6 +701,13 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pt-*
+          path: artifacts
+          merge-multiple: true
+
       - name: Download SHA256SUMS
         uses: actions/download-artifact@v4
         with:
@@ -666,31 +722,21 @@ jobs:
           # Find previous tag
           PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p' || true)
 
+          # Generate PR-based changelog via GitHub API
           if [ -n "$PREV_TAG" ]; then
-            RANGE="${PREV_TAG}..${TAG}"
+            GENERATED=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="${TAG}" \
+              -f previous_tag_name="${PREV_TAG}" \
+              --jq '.body')
           else
-            RANGE="${TAG}"
+            GENERATED=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="${TAG}" \
+              --jq '.body')
           fi
 
-          # Generate contributor list
-          if [ -n "$PREV_TAG" ]; then
-            CONTRIBUTORS=$(git log "${RANGE}" --format='%aN' | sort | uniq -c | sort -rn | sed 's/^ *\([0-9]*\) \(.*\)/- \2 (\1 commits)/')
-          else
-            CONTRIBUTORS=$(git log --format='%aN' | sort | uniq -c | sort -rn | sed 's/^ *\([0-9]*\) \(.*\)/- \2 (\1 commits)/')
-          fi
-
-          # Generate commit log
-          if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log "${RANGE}" --format='- [`%h`](https://github.com/${{ github.repository }}/commit/%H) %s (%aN)' --reverse)
-          else
-            COMMITS=$(git log --format='- [`%h`](https://github.com/${{ github.repository }}/commit/%H) %s (%aN)' --reverse)
-          fi
-
-          # Build release body using echo to avoid heredoc indentation issues
+          # Build release body
           {
-            echo "## Release Notes"
-            echo ""
-            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
+            echo "${GENERATED}"
             echo ""
             echo "## Download"
             echo ""
@@ -704,20 +750,26 @@ jobs:
             echo "| Windows | x86_64 | \`polytunnel-${VERSION}-windows-x86_64.zip\` |"
             echo "| Windows | aarch64 | \`polytunnel-${VERSION}-windows-aarch64.zip\` |"
             echo ""
+            echo "## Binary (no extraction needed)"
+            echo ""
+            echo "| Platform | Architecture | File |"
+            echo "|----------|-------------|------|"
+            echo "| Linux | x86_64 | \`pt-linux-x86_64\` |"
+            echo "| Linux | aarch64 | \`pt-linux-aarch64\` |"
+            echo "| Linux | x86_64 (static) | \`pt-linux-musl\` |"
+            echo "| Linux | aarch64 (static) | \`pt-linux-aarch64-musl\` |"
+            echo "| macOS | aarch64 (Apple Silicon) | \`pt-macos-aarch64\` |"
+            echo "| Windows | x86_64 | \`pt-windows-x86_64.exe\` |"
+            echo "| Windows | aarch64 | \`pt-windows-aarch64.exe\` |"
+            echo ""
             echo "## Verify checksums"
             echo ""
             echo "\`\`\`bash"
             echo "sha256sum -c SHA256SUMS"
             echo "\`\`\`"
-            echo ""
-            echo "## Contributors"
-            echo ""
-            echo "${CONTRIBUTORS}"
-            echo ""
-            echo "## Commits"
-            echo ""
-            echo "${COMMITS}"
           } > release_notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         run: |
