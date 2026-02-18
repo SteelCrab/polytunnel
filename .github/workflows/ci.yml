@@ -747,10 +747,30 @@ jobs:
           # Extract current version section from CHANGELOG.md
           CHANGELOG=$(awk "/^## .*\\[${TAG}\\]/{found=1; next} found && /^## .*\\[v/{exit} found" CHANGELOG.md)
 
+          # Build contributor avatar section
+          CONTRIBUTORS=$(gh api "repos/${{ github.repository }}/commits?sha=${TAG}&per_page=100" \
+            --jq '[.[].author | select(.login != null) | {login: .login, avatar: .avatar_url}] | unique_by(.login) | .[]' \
+            2>/dev/null || true)
+
+          AVATAR_LINE=""
+          if [ -n "$CONTRIBUTORS" ]; then
+            while IFS= read -r entry; do
+              LOGIN=$(echo "$entry" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d['login'])")
+              AVATAR=$(echo "$entry" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d['avatar'])")
+              AVATAR_LINE+="[![${LOGIN}](${AVATAR}&s=48)](https://github.com/${LOGIN}) "
+            done <<< "$CONTRIBUTORS"
+          fi
+
           # Build release body
           {
             echo "${GENERATED}"
             echo ""
+            if [ -n "$AVATAR_LINE" ]; then
+              echo "## 👥 Contributors"
+              echo ""
+              echo "${AVATAR_LINE}"
+              echo ""
+            fi
             if [ -n "$CHANGELOG" ]; then
               echo "## 📝 Changelog"
               echo ""
