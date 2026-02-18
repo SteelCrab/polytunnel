@@ -719,6 +719,10 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG#v}"
 
+          # Extract release title from CHANGELOG.md (e.g. "## 🚀 [v0.1.0] — Initial Release" → "v0.1.0 — Initial Release")
+          CHANGELOG_TITLE=$(grep -m1 "^\#\# .*\[${TAG}\]" CHANGELOG.md | sed 's/^##[[:space:]]*//' | sed 's/\['"${TAG}"'\]/'"${TAG}"'/' || true)
+          RELEASE_TITLE="${CHANGELOG_TITLE:-$TAG}"
+
           # Find previous tag
           PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p' || true)
 
@@ -791,12 +795,12 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           if gh release view "$TAG" &>/dev/null; then
             gh release edit "$TAG" \
-              --title "$TAG" \
+              --title "$RELEASE_TITLE" \
               --notes-file release_notes.md
             gh release upload "$TAG" artifacts/* --clobber
           else
             gh release create "$TAG" \
-              --title "$TAG" \
+              --title "$RELEASE_TITLE" \
               --notes-file release_notes.md \
               --verify-tag \
               artifacts/*
