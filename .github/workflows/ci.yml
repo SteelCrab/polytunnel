@@ -18,6 +18,9 @@ on:
     branches:
       - '**'
       - '!docs'
+    # Run on version tags for release publishing
+    tags:
+      - 'v*'
   pull_request:
     # Run on all pull requests except docs
     branches:
@@ -622,3 +625,106 @@ jobs:
         with:
           name: SHA256SUMS
           path: artifacts/SHA256SUMS
+
+  # Job 21: Publish GitHub Release with binary assets and contributor history
+  publish:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - checksum
+      - test
+      - lint
+      - fmt
+      - security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: polytunnel-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Download SHA256SUMS
+        uses: actions/download-artifact@v4
+        with:
+          name: SHA256SUMS
+          path: artifacts
+
+      - name: Generate release notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+
+          # Find previous tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p' || true)
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="${TAG}"
+          fi
+
+          # Generate contributor list
+          if [ -n "$PREV_TAG" ]; then
+            CONTRIBUTORS=$(git log "${RANGE}" --format='%aN' | sort | uniq -c | sort -rn | sed 's/^ *\([0-9]*\) \(.*\)/- \2 (\1 commits)/')
+          else
+            CONTRIBUTORS=$(git log --format='%aN' | sort | uniq -c | sort -rn | sed 's/^ *\([0-9]*\) \(.*\)/- \2 (\1 commits)/')
+          fi
+
+          # Generate commit log
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log "${RANGE}" --format='- [`%h`](https://github.com/${{ github.repository }}/commit/%H) %s (%aN)' --reverse)
+          else
+            COMMITS=$(git log --format='- [`%h`](https://github.com/${{ github.repository }}/commit/%H) %s (%aN)' --reverse)
+          fi
+
+          # Build release body using echo to avoid heredoc indentation issues
+          {
+            echo "## Release Notes"
+            echo ""
+            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
+            echo ""
+            echo "## Download"
+            echo ""
+            echo "| Platform | Architecture | File |"
+            echo "|----------|-------------|------|"
+            echo "| Linux | x86_64 | \`polytunnel-${VERSION}-linux-x86_64.tar.gz\` |"
+            echo "| Linux | aarch64 | \`polytunnel-${VERSION}-linux-aarch64.tar.gz\` |"
+            echo "| Linux | x86_64 (static) | \`polytunnel-${VERSION}-linux-musl.tar.gz\` |"
+            echo "| Linux | aarch64 (static) | \`polytunnel-${VERSION}-linux-aarch64-musl.tar.gz\` |"
+            echo "| macOS | aarch64 (Apple Silicon) | \`polytunnel-${VERSION}-macos-aarch64.tar.gz\` |"
+            echo "| Windows | x86_64 | \`polytunnel-${VERSION}-windows-x86_64.zip\` |"
+            echo "| Windows | aarch64 | \`polytunnel-${VERSION}-windows-aarch64.zip\` |"
+            echo ""
+            echo "## Verify checksums"
+            echo ""
+            echo "\`\`\`bash"
+            echo "sha256sum -c SHA256SUMS"
+            echo "\`\`\`"
+            echo ""
+            echo "## Contributors"
+            echo ""
+            echo "${CONTRIBUTORS}"
+            echo ""
+            echo "## Commits"
+            echo ""
+            echo "${COMMITS}"
+          } > release_notes.md
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${GITHUB_REF#refs/tags/}" \
+            --title "${GITHUB_REF#refs/tags/}" \
+            --notes-file release_notes.md \
+            --verify-tag \
+            artifacts/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
