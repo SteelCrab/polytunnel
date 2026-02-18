@@ -786,12 +786,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Release
+      - name: Create or Update GitHub Release
         run: |
-          gh release create "${GITHUB_REF#refs/tags/}" \
-            --title "${GITHUB_REF#refs/tags/}" \
-            --notes-file release_notes.md \
-            --verify-tag \
-            artifacts/*
+          TAG="${GITHUB_REF#refs/tags/}"
+          if gh release view "$TAG" &>/dev/null; then
+            gh release edit "$TAG" \
+              --title "$TAG" \
+              --notes-file release_notes.md
+            gh release upload "$TAG" artifacts/* --clobber
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file release_notes.md \
+              --verify-tag \
+              artifacts/*
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
