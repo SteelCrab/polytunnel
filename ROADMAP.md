@@ -7,14 +7,14 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 [x] Week 2: Baseline release packaging and repository publication preparation.
   [x] Publish the baseline non-container distribution specification in `/package-spec.md`.
   [x] Define artifact format, file naming, checksum policy, and installation flow in `/package-spec.md`.
-  [x] Confirm minimum target matrix in `/package-spec.md`: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64 (windows-arm64 tracked in v0.2.0).
+  [x] Confirm minimum target matrix in `/package-spec.md`: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64 (windows-aarch64 tracked in v0.2.0).
   [x] Define repository publication contents in `/package-spec.md` (binary, examples, compatibility notes, signatures policy).
   [x] Update README and README_KR release section with checksum + install verification steps.
   [x] Keep container distribution tasks to v0.2.0 only (container package and smoke tests).
 [ ] Week 3: CI/build/test matrix stabilization for initial release.
-  [ ] Add windows-arm64 non-container release artifact target (`polytunnel-<version>-windows-arm64.zip`) and naming rule to `package-spec.md`.
-  [ ] Extend release CI matrix for windows-arm64 build, checksum generation, and publish verification.
-  [ ] Stabilize all 6-platform build matrix (linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64, windows-arm64).
+  [ ] Add windows-aarch64 non-container release artifact target (`polytunnel-<version>-windows-aarch64.zip`) and naming rule to `package-spec.md`.
+  [ ] Extend release CI matrix for windows-aarch64 build, checksum generation, and publish verification.
+  [ ] Stabilize all 6-platform build matrix (linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64, windows-aarch64).
 [ ] Week 4: Contributor-level docs and release notes finalized in README.
 
 ## Milestone: v0.1.1 (Weeks 1-4) — Reliability & Test hardening

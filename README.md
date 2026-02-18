@@ -57,7 +57,7 @@ For releases before the container distribution, download archived artifacts from
   - `polytunnel-0.1.0-linux-musl.tar.gz`
   - `polytunnel-0.1.0-macos-aarch64.tar.gz`
   - `polytunnel-0.1.0-windows-x86_64.zip`
-  - `polytunnel-0.1.0-windows-arm64.zip`
+  - `polytunnel-0.1.0-windows-aarch64.zip`
 
 Example install flow:
 

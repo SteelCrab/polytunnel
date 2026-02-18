@@ -7,14 +7,14 @@
 [x] 2주차: 기준 릴리즈 패키지 및 공개 준비 진행
   [x] `/package-spec.md`에 비컨테이너 배포 산출물 사양을 문서화한다.
   [x] `/package-spec.md`에 아티팩트 형식, 파일명 규칙, 체크섬 정책, 설치 절차를 정의한다.
-  [x] `/package-spec.md`에 기준 플랫폼을 확정한다: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64 (windows-arm64는 v0.2.0에서 추적).
+  [x] `/package-spec.md`에 기준 플랫폼을 확정한다: linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64 (windows-aarch64는 v0.2.0에서 추적).
   [x] `/package-spec.md`에 공개 산출물 항목(바이너리, 예시 프로젝트, 호환성 안내, 서명 정책)을 정의한다.
   [x] README/README_KR에 체크섬 검증 기반 설치 절차를 반영한다.
   [x] 컨테이너 배포는 v0.2.0 항목에서만 처리하고 현재는 비컨테이너 배포 기준만 확정한다.
 [ ] 3주차: CI/빌드/테스트 매트릭스 출시 기준 안정화
-  [ ] `package-spec.md`에 windows-arm64 비컨테이너 릴리즈 산출물(`polytunnel-<version>-windows-arm64.zip`) 타깃 및 파일명 규칙 추가
-  [ ] windows-arm64 빌드, 체크섬 생성, 퍼블리시 검증을 포함하도록 릴리즈 CI 매트릭스 확장
-  [ ] 6개 플랫폼 빌드 매트릭스 전체 안정화 (linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64, windows-arm64)
+  [ ] `package-spec.md`에 windows-aarch64 비컨테이너 릴리즈 산출물(`polytunnel-<version>-windows-aarch64.zip`) 타깃 및 파일명 규칙 추가
+  [ ] windows-aarch64 빌드, 체크섬 생성, 퍼블리시 검증을 포함하도록 릴리즈 CI 매트릭스 확장
+  [ ] 6개 플랫폼 빌드 매트릭스 전체 안정화 (linux-x86_64, linux-aarch64, linux-musl, macos-aarch64, windows-x86_64, windows-aarch64)
 [ ] 4주차: README 릴리즈 노트/문서 정비
 
 ## 마일스톤: v0.1.1 (1~4주차) — 신뢰성 및 테스트 강화
