@@ -766,8 +766,6 @@ jobs:
             echo "${GENERATED}"
             echo ""
             if [ -n "$AVATAR_LINE" ]; then
-              echo "## 👥 Contributors"
-              echo ""
               echo "${AVATAR_LINE}"
               echo ""
             fi
