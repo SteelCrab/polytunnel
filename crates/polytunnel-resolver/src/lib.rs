@@ -6,4 +6,4 @@ mod resolve;
 
 pub use error::{ResolverError, Result};
 pub use graph::{DependencyGraph, DependencyNode};
-pub use resolve::Resolver;
+pub use resolve::{ResolvedTree, Resolver};
