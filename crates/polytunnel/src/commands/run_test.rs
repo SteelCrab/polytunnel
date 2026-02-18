@@ -22,6 +22,9 @@ pub async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -
     // Create build orchestrator
     let mut orchestrator = BuildOrchestrator::new(config)?;
 
+    // Resolve dependencies first (required for classpath)
+    orchestrator.resolve_dependencies(verbose).await?;
+
     print_status(
         "Compiling",
         &format!("{} v0.1.0 (test)", name),
