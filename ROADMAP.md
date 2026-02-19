@@ -18,7 +18,7 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 [ ] Week 4: Contributor-level docs and release notes finalized in README.
 
 ## Milestone: v0.1.1 (Weeks 1-4) — Reliability & Test hardening
-[ ] Week 1: Baseline error-path audit for `build` and `test` command flows.
+[x] Week 1: Baseline error-path audit for `build` and `test` command flows.
 [ ] Week 1: Add guard and skip tests where Java tools are missing.
 [ ] Week 2: Expand real integration tests for maven client happy-path and bad-status handling.
 [ ] Week 2: Add test coverage for non-2xx response mapping in client layer.
@@ -32,9 +32,9 @@ This roadmap is based on workspace version **0.1.0** and is split into a 12-week
 [ ] Week 5: Add validation around dependency duplicates and invalid coordinates.
 [ ] Week 6: Implement `pt remove` command + tests.
 [ ] Week 6: Handle file-backed rollback for partial remove failures.
-[ ] Week 7: Implement `pt sync` command + success/error behavior checks.
-[ ] Week 7: Add tests for lockless and partially synced states.
-[ ] Week 8: Implement `pt tree` command and formatting output.
+[x] Week 7: Implement `pt sync` command + success/error behavior checks.
+[x] Week 7: Add tests for lockless and partially synced states.
+[x] Week 8: Implement `pt tree` command and formatting output.
 [ ] Week 8: Implement `pt run` command for running user-specified entry points.
 [ ] Week 8: Add `pt <-> gradlew` migration story with opt-in compatibility mode and clear mapping of equivalent commands/options.
 [ ] Week 8: Add docs for command usage and exit-code expectations.

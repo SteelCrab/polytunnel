@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 polytunnel-core.path = "../polytunnel-core"
+polytunnel-maven.path = "../polytunnel-maven"
 polytunnel-resolver.path = "../polytunnel-resolver"
 polytunnel-build.path = "../polytunnel-build"
 polytunnel-ide.path = "../polytunnel-ide"

@@ -13,15 +13,3 @@ pub fn cmd_remove(dependency: &str) -> Result<()> {
     // TODO: Implement in Phase 3
     Ok(())
 }
-
-pub async fn cmd_sync() -> Result<()> {
-    print_status("Syncing", "dependencies...", Color::Cyan);
-    // TODO: Implement in Phase 3
-    Ok(())
-}
-
-pub async fn cmd_tree() -> Result<()> {
-    println!("Dependency tree:");
-    // TODO: Implement in Phase 3
-    Ok(())
-}

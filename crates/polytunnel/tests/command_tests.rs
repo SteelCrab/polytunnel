@@ -21,21 +21,23 @@ fn test_remove_command_prints_action() {
 }
 
 #[test]
-fn test_sync_command_prints_action() {
+fn test_sync_command_fails_without_config() {
+    let dir = tempfile::tempdir().unwrap();
     Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
         .arg("sync")
         .assert()
-        .success()
-        .stdout(predicates::str::contains("Syncing"));
+        .failure();
 }
 
 #[test]
-fn test_tree_command_prints_action() {
+fn test_tree_command_fails_without_config() {
+    let dir = tempfile::tempdir().unwrap();
     Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
         .arg("tree")
         .assert()
-        .success()
-        .stdout(predicates::str::contains("Dependency tree"));
+        .failure();
 }
 
 #[test]

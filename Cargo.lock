@@ -973,6 +973,7 @@ dependencies = [
  "polytunnel-build",
  "polytunnel-core",
  "polytunnel-ide",
+ "polytunnel-maven",
  "polytunnel-resolver",
  "predicates",
  "tempfile",

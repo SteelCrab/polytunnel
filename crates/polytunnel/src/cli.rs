@@ -30,9 +30,17 @@ pub enum Commands {
         dependency: String,
     },
     /// Sync dependencies
-    Sync,
+    Sync {
+        /// Verbose output
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Show dependency tree
-    Tree,
+    Tree {
+        /// Verbose output
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Build the project
     Build {
         /// Clean build (remove existing outputs)

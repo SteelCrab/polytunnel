@@ -197,20 +197,34 @@ fn test_remove_command_runs() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_sync_command_runs() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )?;
+
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
-    cmd.arg("sync")
+    cmd.current_dir(dir.path())
+        .arg("sync")
         .assert()
         .success()
-        .stdout(predicates::str::contains("Syncing"));
+        .stdout(predicates::str::contains("Synced"));
     Ok(())
 }
 
 #[test]
 fn test_tree_command_runs() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )?;
+
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
-    cmd.arg("tree")
+    cmd.current_dir(dir.path())
+        .arg("tree")
         .assert()
         .success()
-        .stdout(predicates::str::contains("Dependency tree"));
+        .stdout(predicates::str::contains("demo"));
     Ok(())
 }
