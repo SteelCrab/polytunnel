@@ -1,5 +1,4 @@
 use color_eyre::eyre::Result;
-use colored::*;
 use polytunnel_core::ProjectConfig;
 use polytunnel_maven::Coordinate;
 use polytunnel_resolver::{DependencyGraph, Resolver};
@@ -7,9 +6,30 @@ use std::collections::HashSet;
 use std::path::Path;
 
 pub async fn cmd_tree(verbose: bool) -> Result<()> {
-    let config = ProjectConfig::load(Path::new("polytunnel.toml"))?;
+    do_tree(Path::new("polytunnel.toml"), verbose).await
+}
 
-    let mut root_coords: Vec<Coordinate> = config
+pub(crate) async fn do_tree(config_path: &Path, verbose: bool) -> Result<()> {
+    let config = ProjectConfig::load(config_path)?;
+
+    let root_coords = parse_root_coords(&config);
+
+    let mut resolver = Resolver::new();
+    resolver
+        .resolve(&root_coords)
+        .await
+        .map_err(|e| color_eyre::eyre::eyre!("Dependency resolution failed: {}", e))?;
+
+    let lines = render_tree(&config.project.name, &root_coords, &resolver.graph, verbose);
+    for line in lines {
+        println!("{}", line);
+    }
+
+    Ok(())
+}
+
+pub(crate) fn parse_root_coords(config: &ProjectConfig) -> Vec<Coordinate> {
+    let mut coords: Vec<Coordinate> = config
         .dependencies
         .iter()
         .filter_map(|(key, dep)| {
@@ -21,17 +41,19 @@ pub async fn cmd_tree(verbose: bool) -> Result<()> {
             }
         })
         .collect();
-    root_coords.sort_by_key(|c| c.to_string());
+    coords.sort_by_key(|c| c.to_string());
+    coords
+}
 
-    let mut resolver = Resolver::new();
-    resolver
-        .resolve(&root_coords)
-        .await
-        .map_err(|e| color_eyre::eyre::eyre!("Dependency resolution failed: {}", e))?;
+pub(crate) fn render_tree(
+    project_name: &str,
+    root_coords: &[Coordinate],
+    graph: &DependencyGraph,
+    verbose: bool,
+) -> Vec<String> {
+    let mut lines = Vec::new();
+    lines.push(format!("{} v0.1.0", project_name));
 
-    println!("{} v0.1.0", config.project.name.bold());
-
-    let graph = &resolver.graph;
     let mut printed = HashSet::new();
 
     for (i, coord) in root_coords.iter().enumerate() {
@@ -39,20 +61,28 @@ pub async fn cmd_tree(verbose: bool) -> Result<()> {
         let connector = if is_last { "└── " } else { "├── " };
         let child_prefix = if is_last { "    " } else { "│   " };
 
-        println!("{}{}", connector, coord.to_string().cyan());
+        lines.push(format!("{}{}", connector, coord));
         printed.insert(coord.to_string());
-        print_children(graph, coord, child_prefix, &mut printed, verbose);
+        collect_children(
+            graph,
+            coord,
+            child_prefix,
+            &mut printed,
+            verbose,
+            &mut lines,
+        );
     }
 
-    Ok(())
+    lines
 }
 
-fn print_children(
+fn collect_children(
     graph: &DependencyGraph,
     coord: &Coordinate,
     prefix: &str,
     printed: &mut HashSet<String>,
     verbose: bool,
+    lines: &mut Vec<String>,
 ) {
     let _ = verbose;
     let key = coord.to_string();
@@ -67,12 +97,12 @@ fn print_children(
 
             let child_key = child.to_string();
             if printed.contains(&child_key) {
-                println!("{}{}{} (*)", prefix, connector, child.to_string().dimmed());
+                lines.push(format!("{}{}{} (*)", prefix, connector, child));
             } else {
-                println!("{}{}{}", prefix, connector, child);
+                lines.push(format!("{}{}{}", prefix, connector, child));
                 printed.insert(child_key);
                 let new_prefix = format!("{}{}", prefix, child_prefix_ext);
-                print_children(graph, child, &new_prefix, printed, verbose);
+                collect_children(graph, child, &new_prefix, printed, verbose, lines);
             }
         }
     }
