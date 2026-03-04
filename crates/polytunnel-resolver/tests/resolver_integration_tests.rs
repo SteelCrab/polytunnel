@@ -276,6 +276,54 @@ fn test_resolver_new_uses_default_client() {
     assert_eq!(resolver.graph.nodes().count(), 0);
 }
 
+#[test]
+fn test_resolver_default_trait_equals_new() {
+    let resolver = Resolver::default();
+    assert_eq!(resolver.graph.nodes().count(), 0);
+}
+
+fn pom_artifact_routes(base_url: &str) -> Vec<(String, u16, String)> {
+    vec![(
+        format!("{base_url}/org/bom/bom/1.0.0/bom-1.0.0.pom"),
+        200,
+        r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.bom</groupId>
+  <artifactId>bom</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+</project>
+"#
+        .to_string(),
+    )]
+}
+
+#[tokio::test]
+async fn test_resolve_pom_packaging_excluded_from_all_dependencies() {
+    // A POM-type artifact (BOM) should NOT appear in all_dependencies
+    // because pom.packaging == "pom" means there's no JAR to download.
+    let base_url = "https://repo.example.test";
+    let mut resolver = Resolver::with_client(MavenClient::with_transport(
+        base_url,
+        Arc::new(MockTransport::new(pom_artifact_routes(base_url))),
+    ));
+    let root = Coordinate::parse("org.bom:bom:1.0.0").unwrap();
+    let tree = resolver
+        .resolve(&[root])
+        .await
+        .expect("resolver should handle pom-type packaging");
+
+    assert!(
+        !tree.all_dependencies.iter().any(|c| c.artifact_id == "bom"),
+        "pom-type artifacts should be excluded from all_dependencies"
+    );
+    assert!(
+        resolver.graph.get("org.bom:bom:1.0.0").is_some(),
+        "pom-type artifact should still appear in the graph"
+    );
+}
+
 #[tokio::test]
 async fn test_resolve_transitive_dependencies_with_graph() {
     let base_url = "https://repo.example.test";
