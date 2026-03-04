@@ -170,11 +170,7 @@ fn test_parse_pom_with_properties_and_scopes() {
     assert_eq!(pom.properties["project.version"], "1.0.0");
     assert_eq!(pom.dependencies.len(), 6);
 
-    let scopes: Vec<_> = pom
-        .dependencies
-        .iter()
-        .map(|dep| dep.scope.clone())
-        .collect();
+    let scopes: Vec<_> = pom.dependencies.iter().map(|dep| dep.scope).collect();
 
     assert!(scopes.contains(&DependencyScope::System));
     assert!(scopes.contains(&DependencyScope::Import));
@@ -202,6 +198,38 @@ fn test_parse_pom_with_properties_and_scopes() {
         .find(|dep| dep.group_id == "com.example" && dep.artifact_id == "runtime-dep")
         .expect("runtime dependency should be present");
     assert_eq!(runtime_dep.version.as_deref(), Some("2.0.0"));
+}
+
+#[test]
+fn test_parse_pom_with_exclusions() {
+    let xml = r#"
+    <project>
+        <groupId>org.example</groupId>
+        <artifactId>my-lib</artifactId>
+        <version>1.0.0</version>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>6.0.0</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </project>
+    "#;
+
+    let pom = parse_pom(xml).unwrap();
+    assert_eq!(pom.dependencies.len(), 1);
+    let dep = &pom.dependencies[0];
+    assert_eq!(dep.group_id, "org.springframework");
+    assert_eq!(dep.exclusions.len(), 1);
+    assert_eq!(dep.exclusions[0].group_id, "commons-logging");
+    assert_eq!(dep.exclusions[0].artifact_id, "commons-logging");
 }
 
 #[test]

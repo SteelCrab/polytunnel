@@ -77,8 +77,8 @@ public class MainTest {
     );
 
     let mut orchestrator = BuildOrchestrator::new(create_config(root)).unwrap();
-    let compiled = orchestrator.compile_sources().await.unwrap();
-    orchestrator.compile_tests().await.unwrap();
+    let compiled = orchestrator.compile_sources().unwrap();
+    orchestrator.compile_tests().unwrap();
 
     assert_eq!(compiled, 1);
     assert!(root.join("target/classes/com/example/Main.class").exists());
@@ -197,7 +197,7 @@ async fn test_orchestrator_compile_sources_errors_for_missing_source_dir() {
     config.build.source_dirs = vec![root.join("missing-src").to_string_lossy().to_string()];
 
     let mut orchestrator = BuildOrchestrator::new(config).unwrap();
-    let err = orchestrator.compile_sources().await.unwrap_err();
+    let err = orchestrator.compile_sources().unwrap_err();
     assert!(matches!(err, BuildError::SourceDirNotFound { .. }));
 }
 

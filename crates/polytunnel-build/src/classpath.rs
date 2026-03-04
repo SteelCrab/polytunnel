@@ -21,7 +21,6 @@ pub struct ClasspathResult {
 /// Builds and manages classpaths for compilation and execution
 #[derive(Debug, Clone)]
 pub struct ClasspathBuilder {
-    #[allow(dead_code)]
     config: ProjectConfig,
     cached_result: Option<ClasspathResult>,
 }
@@ -78,7 +77,7 @@ impl ClasspathBuilder {
         }
     }
 
-    #[doc(hidden)]
+    /// Expose resolver error mapping for integration tests
     pub fn map_resolver_error_for_tests(error: polytunnel_resolver::ResolverError) -> BuildError {
         Self::map_resolver_error(error)
     }
@@ -206,6 +205,7 @@ impl ClasspathBuilder {
         Ok(result)
     }
 
+    /// Build classpath from a pre-resolved dependency list (for integration tests)
     pub async fn build_classpath_from_resolved_tree_for_tests(
         &mut self,
         cache_dir: &str,
@@ -272,7 +272,7 @@ impl ClasspathBuilder {
     }
 
     /// Parse Maven coordinate from dependency key
-    fn parse_coordinate(key: &str) -> Result<Coordinate> {
+    pub fn parse_coordinate(key: &str) -> Result<Coordinate> {
         let parts: Vec<&str> = key.split(':').collect();
         if parts.len() < 2 {
             return Err(BuildError::InvalidDependency {
@@ -285,41 +285,5 @@ impl ClasspathBuilder {
             parts[1],
             if parts.len() > 2 { parts[2] } else { "LATEST" },
         ))
-    }
-
-    /// Format classpath for command line (helper for tests)
-    #[allow(dead_code)]
-    fn format_classpath(paths: &[PathBuf]) -> String {
-        let separator = if cfg!(windows) { ";" } else { ":" };
-        paths
-            .iter()
-            .map(|p| p.to_string_lossy().to_string())
-            .collect::<Vec<_>>()
-            .join(separator)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_coordinate() {
-        let coord = ClasspathBuilder::parse_coordinate("org.slf4j:slf4j-api:2.0.9");
-        assert!(coord.is_ok());
-
-        let bad = ClasspathBuilder::parse_coordinate("invalid");
-        assert!(bad.is_err());
-    }
-
-    #[test]
-    fn test_format_classpath() {
-        let paths = vec![
-            PathBuf::from("/path/to/lib1.jar"),
-            PathBuf::from("/path/to/lib2.jar"),
-        ];
-        let result = ClasspathBuilder::format_classpath(&paths);
-        assert!(result.contains("lib1.jar"));
-        assert!(result.contains("lib2.jar"));
     }
 }

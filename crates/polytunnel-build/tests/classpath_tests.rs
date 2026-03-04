@@ -173,7 +173,7 @@ async fn test_build_classpath_with_different_scopes() {
 
 #[test]
 fn test_classpath_result_debug() {
-    use polytunnel_build::classpath::ClasspathResult;
+    use polytunnel_build::ClasspathResult;
     use std::path::PathBuf;
 
     let result = ClasspathResult {
@@ -190,7 +190,7 @@ fn test_classpath_result_debug() {
 
 #[test]
 fn test_classpath_result_clone() {
-    use polytunnel_build::classpath::ClasspathResult;
+    use polytunnel_build::ClasspathResult;
     use std::path::PathBuf;
 
     let result = ClasspathResult {
@@ -201,4 +201,28 @@ fn test_classpath_result_clone() {
 
     let cloned = result.clone();
     assert_eq!(cloned.compile_classpath.len(), 1);
+}
+
+#[test]
+fn test_parse_coordinate_valid() {
+    let coord = ClasspathBuilder::parse_coordinate("org.slf4j:slf4j-api:2.0.9");
+    assert!(coord.is_ok());
+}
+
+#[test]
+fn test_parse_coordinate_invalid() {
+    let bad = ClasspathBuilder::parse_coordinate("invalid");
+    assert!(bad.is_err());
+}
+
+#[test]
+fn test_format_classpath() {
+    use std::path::PathBuf;
+    let paths = vec![
+        PathBuf::from("/path/to/lib1.jar"),
+        PathBuf::from("/path/to/lib2.jar"),
+    ];
+    let result = polytunnel_build::format_classpath(&paths);
+    assert!(result.contains("lib1.jar"));
+    assert!(result.contains("lib2.jar"));
 }
