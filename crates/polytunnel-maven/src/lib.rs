@@ -2,6 +2,8 @@
 //!
 //! Maven Central client and POM parser
 
+#![warn(missing_docs)]
+
 mod client;
 mod coordinate;
 mod error;

@@ -107,3 +107,50 @@ impl fmt::Display for Platform {
         write!(f, "{} ({})", self.os, self.arch)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_platform_detect() {
+        let platform = Platform::detect();
+        let display = format!("{}", platform);
+        assert!(!display.is_empty());
+    }
+
+    #[test]
+    fn test_os_display() {
+        assert_eq!(format!("{}", Os::MacOS), "macOS");
+        assert_eq!(format!("{}", Os::Linux), "Linux");
+        assert_eq!(format!("{}", Os::Windows), "Windows");
+        assert_eq!(format!("{}", Os::Unknown), "Unknown");
+    }
+
+    #[test]
+    fn test_arch_display() {
+        assert_eq!(format!("{}", Arch::X86_64), "x86_64");
+        assert_eq!(format!("{}", Arch::Aarch64), "aarch64 (ARM64)");
+        assert_eq!(format!("{}", Arch::X86), "x86");
+        assert_eq!(format!("{}", Arch::Unknown), "unknown");
+    }
+
+    #[test]
+    fn test_platform_is_methods() {
+        let windows = Platform {
+            os: Os::Windows,
+            arch: Arch::X86_64,
+        };
+        assert!(windows.is_windows());
+        assert!(!windows.is_macos());
+        assert!(!windows.is_linux());
+        assert!(!windows.is_arm64());
+
+        let mac_arm = Platform {
+            os: Os::MacOS,
+            arch: Arch::Aarch64,
+        };
+        assert!(mac_arm.is_macos());
+        assert!(mac_arm.is_arm64());
+    }
+}

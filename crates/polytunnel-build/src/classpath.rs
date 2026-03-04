@@ -77,6 +77,7 @@ impl ClasspathBuilder {
         }
     }
 
+    /// Expose resolver error mapping for integration tests
     pub fn map_resolver_error_for_tests(error: polytunnel_resolver::ResolverError) -> BuildError {
         Self::map_resolver_error(error)
     }
@@ -204,6 +205,7 @@ impl ClasspathBuilder {
         Ok(result)
     }
 
+    /// Build classpath from a pre-resolved dependency list (for integration tests)
     pub async fn build_classpath_from_resolved_tree_for_tests(
         &mut self,
         cache_dir: &str,

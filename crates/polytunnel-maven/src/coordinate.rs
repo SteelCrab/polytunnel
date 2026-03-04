@@ -6,11 +6,16 @@ use std::fmt;
 /// Maven artifact coordinate (GAV)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Coordinate {
+    /// Maven group ID (e.g. `"org.slf4j"`)
     pub group_id: String,
+    /// Maven artifact ID (e.g. `"slf4j-api"`)
     pub artifact_id: String,
+    /// Artifact version (e.g. `"2.0.9"`)
     pub version: String,
+    /// Optional classifier suffix (e.g. `"sources"`, `"javadoc"`)
     #[serde(default)]
     pub classifier: Option<String>,
+    /// Artifact packaging type (default: `"jar"`)
     #[serde(default = "default_packaging")]
     pub packaging: String,
 }
@@ -20,6 +25,7 @@ pub(crate) fn default_packaging() -> String {
 }
 
 impl Coordinate {
+    /// Create a new coordinate with JAR packaging and no classifier
     pub fn new(group_id: &str, artifact_id: &str, version: &str) -> Self {
         Self {
             group_id: group_id.to_string(),
@@ -88,8 +94,10 @@ impl fmt::Display for Coordinate {
     }
 }
 
+/// Error type for coordinate parsing failures
 #[derive(Debug, thiserror::Error)]
 pub enum CoordinateError {
+    /// The coordinate string did not match the expected `groupId:artifactId:version` format
     #[error("Invalid coordinate format: {0}")]
     InvalidFormat(String),
 }

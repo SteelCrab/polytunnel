@@ -10,17 +10,21 @@ use std::sync::{Arc, Mutex};
 /// Resolved dependency tree
 #[derive(Debug)]
 pub struct ResolvedTree {
+    /// The root-level coordinates that were directly requested
     pub root_dependencies: Vec<Coordinate>,
+    /// All resolved coordinates including transitives (deduplicated by GA)
     pub all_dependencies: Vec<Coordinate>,
 }
 
 /// Dependency resolver
 pub struct Resolver {
     client: MavenClient,
+    /// Resolved dependency graph, populated after calling [`Resolver::resolve`]
     pub graph: DependencyGraph,
 }
 
 impl Resolver {
+    /// Create a resolver connected to Maven Central
     pub fn new() -> Self {
         Self {
             client: MavenClient::new(),
@@ -28,6 +32,7 @@ impl Resolver {
         }
     }
 
+    /// Create a resolver with a pre-configured [`MavenClient`]
     pub fn with_client(client: MavenClient) -> Self {
         Self {
             client,

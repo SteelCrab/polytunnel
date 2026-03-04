@@ -6,8 +6,11 @@ use std::collections::HashMap;
 /// Node in the dependency graph
 #[derive(Debug, Clone)]
 pub struct DependencyNode {
+    /// Maven coordinate of this artifact
     pub coordinate: Coordinate,
+    /// Direct (transitive) dependencies of this artifact
     pub dependencies: Vec<Coordinate>,
+    /// Resolution depth (0 = root dependency)
     pub depth: usize,
 }
 
@@ -18,6 +21,7 @@ pub struct DependencyGraph {
 }
 
 impl DependencyGraph {
+    /// Create an empty dependency graph
     pub fn new() -> Self {
         Self {
             nodes: HashMap::new(),

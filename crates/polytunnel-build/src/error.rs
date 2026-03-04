@@ -20,23 +20,38 @@ pub enum BuildError {
 
     /// Compilation failed with error message
     #[error("Compilation failed: {message}")]
-    CompilationFailed { message: String },
+    CompilationFailed {
+        /// Compiler error output
+        message: String,
+    },
 
     /// Test execution failed
     #[error("Test execution failed: {message}")]
-    TestExecutionFailed { message: String },
+    TestExecutionFailed {
+        /// Description of the test execution failure
+        message: String,
+    },
 
     /// Source directory not found
     #[error("Source directory not found: {path}")]
-    SourceDirNotFound { path: String },
+    SourceDirNotFound {
+        /// Path to the missing source directory
+        path: String,
+    },
 
     /// Test framework could not be detected
     #[error("Test framework not detected. Available: {available}")]
-    TestFrameworkNotDetected { available: String },
+    TestFrameworkNotDetected {
+        /// Comma-separated list of frameworks that were checked
+        available: String,
+    },
 
     /// Invalid dependency format
     #[error("Invalid dependency format: {input}")]
-    InvalidDependency { input: String },
+    InvalidDependency {
+        /// The malformed dependency string
+        input: String,
+    },
 
     /// Maven error
     #[error("Maven error: {0}")]

@@ -199,6 +199,26 @@ async fn test_fetch_pom_content_bad_status() {
 }
 
 #[tokio::test]
+async fn test_fetch_pom_html_response_is_error() {
+    // Maven Central sometimes returns an HTML error page instead of a POM.
+    // Ensure fetch_pom propagates a parse error in that case.
+    let base_url = "https://repo.example.test";
+    let mut routes = routes(base_url);
+    routes.push((
+        format!("{base_url}/org/test/lib/1.0.0/lib-1.0.0.pom"),
+        200,
+        "<!DOCTYPE html><html><body>404 Not Found</body></html>".to_string(),
+    ));
+    let client = MavenClient::with_transport(base_url, Arc::new(MockTransport::new(routes)));
+    let coord = Coordinate::parse("org.test:lib:1.0.0").unwrap();
+
+    assert!(
+        client.fetch_pom(&coord).await.is_err(),
+        "fetch_pom should return an error when response is an HTML page"
+    );
+}
+
+#[tokio::test]
 async fn test_download_jar_bad_status() {
     let base_url = "https://repo.example.test";
     let mut routes = routes(base_url);

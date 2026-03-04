@@ -1,9 +1,15 @@
+//! VS Code project file generation
+
 use crate::error::{IdeError, Result};
 use colored::*;
 use polytunnel_build::BuildOrchestrator;
 use polytunnel_core::ProjectConfig;
 use std::path::Path;
 
+/// Generate VS Code IDE configuration files (`.project`, `.classpath`, `.vscode/settings.json`)
+///
+/// Resolves dependencies first so that the generated `.classpath` includes
+/// all downloaded JARs.
 pub async fn generate(config: &ProjectConfig, root_path: &Path) -> Result<()> {
     print_status("Generating", "VS Code configuration...", Color::Cyan);
 

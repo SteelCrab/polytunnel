@@ -43,6 +43,7 @@ pub struct BuildResult {
 
 /// Central orchestrator for build operations
 pub struct BuildOrchestrator {
+    /// Project configuration loaded from `polytunnel.toml`
     pub config: ProjectConfig,
     classpath_builder: ClasspathBuilder,
     compiler: JavaCompiler,

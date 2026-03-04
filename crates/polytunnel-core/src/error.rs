@@ -24,5 +24,8 @@ pub enum CoreError {
 
     /// Config file not found
     #[error("Config not found: {path}")]
-    ConfigNotFound { path: String },
+    ConfigNotFound {
+        /// Path where the config file was expected
+        path: String,
+    },
 }

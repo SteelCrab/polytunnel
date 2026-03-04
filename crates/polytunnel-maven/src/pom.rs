@@ -9,47 +9,68 @@ use serde::{Deserialize, Serialize};
 /// Parsed POM file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pom {
+    /// Maven coordinate of this artifact
     pub coordinate: Coordinate,
+    /// Artifact packaging type (default: `"jar"`)
     #[serde(default = "crate::coordinate::default_packaging")]
     pub packaging: String,
+    /// Parent POM coordinate, if any
     pub parent: Option<Coordinate>,
+    /// Direct dependencies declared in `<dependencies>`
     pub dependencies: Vec<PomDependency>,
+    /// Managed dependencies declared in `<dependencyManagement>`
     pub dependency_management: Vec<PomDependency>,
+    /// POM properties (key/value pairs, including `project.*` aliases)
     pub properties: std::collections::HashMap<String, String>,
 }
 
-/// Dependency entry in POM
+/// Dependency entry in a POM file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PomDependency {
+    /// Dependency group ID
     pub group_id: String,
+    /// Dependency artifact ID
     pub artifact_id: String,
+    /// Dependency version (may be absent when managed by `<dependencyManagement>`)
     pub version: Option<String>,
+    /// Dependency scope (default: `Compile`)
     #[serde(default)]
     pub scope: DependencyScope,
+    /// Whether this dependency is optional
     #[serde(default)]
     pub optional: bool,
+    /// Transitive dependencies to exclude
     pub exclusions: Vec<Exclusion>,
 }
 
+/// Maven dependency scope
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyScope {
+    /// Available during compilation, testing, and runtime (default)
     #[default]
     Compile,
+    /// Available at runtime and test time only
     Runtime,
+    /// Available during test compilation and execution only
     Test,
+    /// Provided by the runtime environment; not packaged
     Provided,
+    /// Resolved from the local filesystem via `<systemPath>`
     System,
+    /// Used in `<dependencyManagement>` to import a BOM
     Import,
 }
 
+/// Transitive dependency exclusion rule
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Exclusion {
+    /// Group ID of the artifact to exclude
     pub group_id: String,
+    /// Artifact ID of the artifact to exclude
     pub artifact_id: String,
 }
 
-/// Parse POM XML content
 fn inject_project_properties(pom: &mut Pom) {
     if !pom.coordinate.version.is_empty() {
         pom.properties.insert(
@@ -85,6 +106,10 @@ fn inject_project_properties(pom: &mut Pom) {
     }
 }
 
+/// Parse POM XML content into a [`Pom`] struct.
+///
+/// Returns an error if the input is HTML (likely a Maven Central error page) or
+/// if the XML cannot be parsed.
 pub fn parse_pom(xml: &str) -> Result<Pom> {
     // Detect if response is HTML (likely an error page from Maven Central)
     let trimmed = xml.trim();
@@ -124,6 +149,9 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
     let mut in_dependency_management = false;
     let mut in_exclusion = false;
     let mut prop_name = String::new();
+    let mut excl_group_id = String::new();
+    let mut excl_artifact_id = String::new();
+    let mut current_exclusions: Vec<Exclusion> = Vec::new();
 
     loop {
         match reader.read_event() {
@@ -139,8 +167,13 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         version.clear();
                         scope = DependencyScope::Compile;
                         optional = false;
+                        current_exclusions.clear();
                     }
-                    "exclusion" => in_exclusion = true,
+                    "exclusion" => {
+                        in_exclusion = true;
+                        excl_group_id.clear();
+                        excl_artifact_id.clear();
+                    }
                     "parent" => in_parent = true,
                     "properties" => in_properties = true,
                     "dependencyManagement" => in_dependency_management = true,
@@ -166,7 +199,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                             },
                             scope,
                             optional,
-                            exclusions: Vec::new(),
+                            exclusions: std::mem::take(&mut current_exclusions),
                         };
 
                         if in_dependency_management {
@@ -176,7 +209,17 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         }
                         in_dependency = false;
                     }
-                    "exclusion" => in_exclusion = false,
+                    "exclusion" => {
+                        if in_exclusion {
+                            current_exclusions.push(Exclusion {
+                                group_id: excl_group_id.clone(),
+                                artifact_id: excl_artifact_id.clone(),
+                            });
+                            excl_group_id.clear();
+                            excl_artifact_id.clear();
+                        }
+                        in_exclusion = false;
+                    }
                     "parent" => {
                         pom.parent = Some(Coordinate::new(&group_id, &artifact_id, &version));
                         in_parent = false;
@@ -210,7 +253,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         }
                         "groupId" => {
                             if in_exclusion {
-                                // Ignore exclusion groupId
+                                excl_group_id = current_text.clone();
                             } else if in_dependency || in_parent {
                                 group_id = current_text.clone();
                             } else if current_path.len() == 2 {
@@ -219,7 +262,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                         }
                         "artifactId" => {
                             if in_exclusion {
-                                // Ignore exclusion artifactId
+                                excl_artifact_id = current_text.clone();
                             } else if in_dependency || in_parent {
                                 artifact_id = current_text.clone();
                             } else if current_path.len() == 2 {
@@ -388,10 +431,12 @@ impl Pom {
         }
     }
 
+    /// Append parent dependency management entries to this POM's managed list
     pub fn merge_dependency_management(&mut self, parent_dm: Vec<PomDependency>) {
         self.dependency_management.extend(parent_dm);
     }
 
+    /// Resolve version-less dependencies using the `<dependencyManagement>` list
     pub fn fill_missing_versions(&mut self) {
         for dep in &mut self.dependencies {
             if dep.version.is_none() {

@@ -3,6 +3,8 @@
 //! Provides compilation and test execution for Java projects using javac.
 //! Supports JUnit 5, JUnit 4, and TestNG test frameworks with automatic detection.
 
+#![warn(missing_docs)]
+
 mod classpath;
 mod compiler;
 pub mod error;
