@@ -40,7 +40,7 @@ pub enum Dependency {
     },
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyScope {
     #[default]
@@ -171,7 +171,7 @@ impl Dependency {
     pub fn scope(&self) -> DependencyScope {
         match self {
             Dependency::Simple(_) => DependencyScope::Compile,
-            Dependency::Detailed { scope, .. } => scope.clone(),
+            Dependency::Detailed { scope, .. } => *scope,
         }
     }
 }

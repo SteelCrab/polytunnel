@@ -9,7 +9,6 @@ path = "src/main.rs"
 
 [dependencies]
 polytunnel-core.path = "../polytunnel-core"
-polytunnel-resolver.path = "../polytunnel-resolver"
 polytunnel-build.path = "../polytunnel-build"
 polytunnel-ide.path = "../polytunnel-ide"
 clap.workspace = true

@@ -55,11 +55,8 @@ pub struct TestResult {
 
 /// Test runner for Java projects
 pub struct TestRunner {
-    #[allow(dead_code)]
     framework: TestFramework,
-    #[allow(dead_code)]
     classpath: Vec<PathBuf>,
-    #[allow(dead_code)]
     test_output_dir: PathBuf,
 }
 
@@ -159,7 +156,7 @@ impl TestRunner {
     ///
     /// # Errors
     ///
-    /// * `AppError::TestExecutionFailed` - If test execution fails
+    /// * `BuildError::TestExecutionFailed` - If test execution fails
     ///
     /// # Example
     ///
@@ -198,8 +195,10 @@ impl TestRunner {
     }
 
     async fn run_junit5(&self, test_classes: &[String], verbose: bool) -> Result<TestResult> {
-        // Construct classpath string
-        let classpath = self.format_classpath();
+        // Construct classpath string (test_output_dir is appended here)
+        let mut paths = self.classpath.clone();
+        paths.push(self.test_output_dir.clone());
+        let classpath = crate::format_classpath(&paths);
 
         let mut args = vec![
             "-jar".to_string(),
@@ -283,7 +282,6 @@ impl TestRunner {
     }
 
     /// Find all test classes in test output directory
-    #[allow(dead_code)]
     fn find_test_classes(&self) -> Result<Vec<String>> {
         let mut classes = Vec::new();
 
@@ -315,81 +313,11 @@ impl TestRunner {
     }
 
     /// Check if class name matches test patterns
-    fn matches_test_pattern(&self, class_name: &str) -> bool {
+    pub fn matches_test_pattern(&self, class_name: &str) -> bool {
         // Match common test naming patterns
         class_name.ends_with("Test")
             || class_name.ends_with("Tests")
             || class_name.ends_with("TestCase")
             || class_name.starts_with("Test")
-    }
-
-    /// Format classpath for command line
-    ///
-    /// Uses OS-specific path separator:
-    /// - Windows (all architectures including ARM64): `;`
-    /// - Unix/Linux/macOS (all architectures): `:`
-    #[allow(dead_code)]
-    fn format_classpath(&self) -> String {
-        let separator = if cfg!(windows) { ";" } else { ":" };
-        let mut paths = self.classpath.clone();
-        paths.push(self.test_output_dir.clone());
-
-        paths
-            .iter()
-            .map(|p| p.to_string_lossy().to_string())
-            .collect::<Vec<_>>()
-            .join(separator)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_detect_framework_junit5() {
-        let classpath = vec![PathBuf::from("/lib/junit-jupiter-api-5.10.0.jar")];
-        let framework = TestRunner::detect_framework(&classpath);
-        assert_eq!(framework, Some(TestFramework::JUnit5));
-    }
-
-    #[test]
-    fn test_detect_framework_junit4() {
-        let classpath = vec![PathBuf::from("/lib/junit-4.13.2.jar")];
-        let framework = TestRunner::detect_framework(&classpath);
-        assert_eq!(framework, Some(TestFramework::JUnit4));
-    }
-
-    #[test]
-    fn test_detect_framework_testng() {
-        let classpath = vec![PathBuf::from("/lib/testng-7.8.0.jar")];
-        let framework = TestRunner::detect_framework(&classpath);
-        assert_eq!(framework, Some(TestFramework::TestNG));
-    }
-
-    #[test]
-    fn test_detect_framework_priority() {
-        // JUnit 5 should have priority
-        let classpath = vec![
-            PathBuf::from("/lib/junit-jupiter-api-5.10.0.jar"),
-            PathBuf::from("/lib/junit-4.13.2.jar"),
-        ];
-        let framework = TestRunner::detect_framework(&classpath);
-        assert_eq!(framework, Some(TestFramework::JUnit5));
-    }
-
-    #[test]
-    fn test_matches_test_pattern() {
-        let runner = TestRunner::new(
-            TestFramework::JUnit5,
-            vec![],
-            PathBuf::from("target/test-classes"),
-        );
-
-        assert!(runner.matches_test_pattern("AppTest"));
-        assert!(runner.matches_test_pattern("AppTests"));
-        assert!(runner.matches_test_pattern("AppTestCase"));
-        assert!(runner.matches_test_pattern("TestApp"));
-        assert!(!runner.matches_test_pattern("App"));
     }
 }

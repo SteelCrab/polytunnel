@@ -10,16 +10,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pom {
     pub coordinate: Coordinate,
-    #[serde(default = "default_packaging")]
+    #[serde(default = "crate::coordinate::default_packaging")]
     pub packaging: String,
     pub parent: Option<Coordinate>,
     pub dependencies: Vec<PomDependency>,
     pub dependency_management: Vec<PomDependency>,
     pub properties: std::collections::HashMap<String, String>,
-}
-
-fn default_packaging() -> String {
-    "jar".to_string()
 }
 
 /// Dependency entry in POM
@@ -35,7 +31,7 @@ pub struct PomDependency {
     pub exclusions: Vec<Exclusion>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyScope {
     #[default]
@@ -168,7 +164,7 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
                             } else {
                                 Some(version.clone())
                             },
-                            scope: scope.clone(),
+                            scope,
                             optional,
                             exclusions: Vec::new(),
                         };

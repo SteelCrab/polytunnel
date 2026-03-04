@@ -15,7 +15,7 @@ pub struct Coordinate {
     pub packaging: String,
 }
 
-fn default_packaging() -> String {
+pub(crate) fn default_packaging() -> String {
     "jar".to_string()
 }
 

@@ -26,7 +26,3 @@ pub enum CoreError {
     #[error("Config not found: {path}")]
     ConfigNotFound { path: String },
 }
-
-// Keep AppError as alias for backward compatibility during migration
-#[deprecated(note = "Use crate-specific error types instead")]
-pub type AppError = CoreError;

@@ -170,11 +170,7 @@ fn test_parse_pom_with_properties_and_scopes() {
     assert_eq!(pom.properties["project.version"], "1.0.0");
     assert_eq!(pom.dependencies.len(), 6);
 
-    let scopes: Vec<_> = pom
-        .dependencies
-        .iter()
-        .map(|dep| dep.scope.clone())
-        .collect();
+    let scopes: Vec<_> = pom.dependencies.iter().map(|dep| dep.scope).collect();
 
     assert!(scopes.contains(&DependencyScope::System));
     assert!(scopes.contains(&DependencyScope::Import));

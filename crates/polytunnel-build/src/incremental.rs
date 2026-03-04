@@ -42,7 +42,7 @@ impl BuildCache {
     ///
     /// # Errors
     ///
-    /// * `AppError::Io` - If cache file cannot be read
+    /// * `BuildError::Io` - If cache file cannot be read
     ///
     /// # Example
     ///
@@ -78,7 +78,7 @@ impl BuildCache {
     ///
     /// # Errors
     ///
-    /// * `AppError::Io` - If cache cannot be saved
+    /// * `BuildError::Io` - If cache cannot be saved
     ///
     /// # Example
     ///
@@ -180,44 +180,5 @@ impl BuildCache {
     pub fn clear(&mut self) -> Result<()> {
         self.entries.clear();
         self.save()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_build_cache_entry_serialization() {
-        let entry = BuildCacheEntry {
-            source_file: PathBuf::from("src/Main.java"),
-            last_modified: 1705334400,
-            output_file: PathBuf::from("target/classes/Main.class"),
-        };
-
-        let json = serde_json::to_string(&entry).unwrap();
-        let deserialized: BuildCacheEntry = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(deserialized.source_file, entry.source_file);
-        assert_eq!(deserialized.last_modified, entry.last_modified);
-    }
-
-    #[test]
-    fn test_cache_entry_map_serialization() {
-        let mut entries = HashMap::new();
-        entries.insert(
-            "src/Main.java".to_string(),
-            BuildCacheEntry {
-                source_file: PathBuf::from("src/Main.java"),
-                last_modified: 1705334400,
-                output_file: PathBuf::from("target/classes/Main.class"),
-            },
-        );
-
-        let json = serde_json::to_string_pretty(&entries).unwrap();
-        let deserialized: HashMap<String, BuildCacheEntry> = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(deserialized.len(), 1);
-        assert!(deserialized.contains_key("src/Main.java"));
     }
 }

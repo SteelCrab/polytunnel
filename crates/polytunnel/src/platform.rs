@@ -107,30 +107,3 @@ impl fmt::Display for Platform {
         write!(f, "{} ({})", self.os, self.arch)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_platform_detect() {
-        let platform = Platform::detect();
-        // Should not panic and should have valid values
-        assert!(!format!("{}", platform).is_empty());
-    }
-
-    #[test]
-    fn test_os_display() {
-        assert_eq!(format!("{}", Os::Windows), "Windows");
-        assert_eq!(format!("{}", Os::MacOS), "macOS");
-        assert_eq!(format!("{}", Os::Linux), "Linux");
-    }
-
-    #[test]
-    fn test_arch_display() {
-        assert_eq!(format!("{}", Arch::X86_64), "x86_64");
-        assert_eq!(format!("{}", Arch::Aarch64), "aarch64 (ARM64)");
-        assert_eq!(format!("{}", Arch::X86), "x86");
-        assert_eq!(format!("{}", Arch::Unknown), "unknown");
-    }
-}

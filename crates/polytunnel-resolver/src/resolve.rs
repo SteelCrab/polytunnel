@@ -1,6 +1,6 @@
 //! Dependency resolution algorithm
 
-use crate::error::Result;
+use crate::error::{ResolverError, Result};
 use crate::graph::DependencyGraph;
 use futures::future::{BoxFuture, FutureExt, try_join_all};
 use polytunnel_maven::{Coordinate, MavenClient};
@@ -17,7 +17,7 @@ pub struct ResolvedTree {
 /// Dependency resolver
 pub struct Resolver {
     client: MavenClient,
-    pub graph: DependencyGraph, // Made public or accessible if needed, or we just fill it.
+    pub graph: DependencyGraph,
 }
 
 impl Resolver {
@@ -74,7 +74,14 @@ impl Resolver {
         }
 
         // Restore graph
-        let final_graph = Arc::try_unwrap(graph).unwrap().into_inner().unwrap();
+        let final_graph = Arc::try_unwrap(graph)
+            .map_err(|_| ResolverError::DependencyNotFound {
+                coordinate: "internal: graph arc still referenced".to_string(),
+            })?
+            .into_inner()
+            .map_err(|_| ResolverError::DependencyNotFound {
+                coordinate: "internal: graph mutex poisoned".to_string(),
+            })?;
         self.graph = final_graph;
 
         // Dedup all_dependencies based on GA or GAV?
@@ -125,7 +132,7 @@ impl Resolver {
                         pom.merge_properties(&parent_pom.properties);
                     }
                     Err(e) => {
-                        println!("Warning: Failed to resolve parent {}: {}", parent_coord, e);
+                        eprintln!("Warning: Failed to resolve parent {}: {}", parent_coord, e);
                     }
                 }
             }
@@ -168,7 +175,11 @@ impl Resolver {
 
             // Check visited by GA - only process first encountered version
             {
-                let mut v = visited.lock().unwrap();
+                let mut v = visited
+                    .lock()
+                    .map_err(|_| ResolverError::DependencyNotFound {
+                        coordinate: "internal: visited mutex poisoned".to_string(),
+                    })?;
                 if v.contains(&ga_key) {
                     return Ok(Vec::new());
                 }
@@ -183,7 +194,11 @@ impl Resolver {
 
             // Update graph
             {
-                let mut g = graph.lock().unwrap();
+                let mut g = graph
+                    .lock()
+                    .map_err(|_| ResolverError::DependencyNotFound {
+                        coordinate: "internal: graph mutex poisoned".to_string(),
+                    })?;
                 g.add_node(coord.clone(), transitive.clone(), depth);
             }
 
@@ -215,7 +230,7 @@ impl Resolver {
                         {
                             Ok(deps) => Ok(deps),
                             Err(e) => {
-                                println!(
+                                eprintln!(
                                     "Warning: Failed to resolve dependency {}: {}",
                                     dep_clone, e
                                 );

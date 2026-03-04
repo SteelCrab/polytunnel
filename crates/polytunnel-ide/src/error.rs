@@ -1,8 +1,10 @@
+//! Error types for polytunnel-ide
+
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, IdeError>;
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum IdeError {
     #[error("Build error: {0}")]
     Build(#[from] polytunnel_build::BuildError),

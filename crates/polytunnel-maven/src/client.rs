@@ -6,7 +6,7 @@ use crate::pom::Pom;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -195,20 +195,14 @@ impl MavenClient {
     }
 
     /// Download JAR to a path
-    pub async fn download_jar(
-        &self,
-        coord: &Coordinate,
-        dest: &PathBuf,
-        verbose: bool,
-    ) -> Result<()> {
+    pub async fn download_jar(&self, coord: &Coordinate, dest: &Path, verbose: bool) -> Result<()> {
         let url = self.jar_url(coord);
-        let request_url = url.clone();
 
         if verbose {
-            println!("   Downloading {}", coord);
+            eprintln!("   Downloading {}", coord);
         }
 
-        let response = self.http.get(request_url).await?;
+        let response = self.http.get(url.clone()).await?;
         if !(200..=299).contains(&response.status) {
             return Err(MavenError::HttpStatus {
                 status: response.status,
@@ -216,7 +210,7 @@ impl MavenClient {
             });
         }
 
-        std::fs::write(dest, response.body)?;
+        tokio::fs::write(dest, response.body).await?;
         Ok(())
     }
 }
