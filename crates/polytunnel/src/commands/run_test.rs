@@ -19,6 +19,9 @@ pub async fn cmd_test(pattern: Option<String>, verbose: bool, fail_fast: bool) -
 
     let mut orchestrator = BuildOrchestrator::new(config)?;
 
+    // Resolve dependencies first (required for classpath)
+    orchestrator.resolve_dependencies(verbose).await?;
+
     print_status(
         "Compiling",
         &format!("{} v{} (test)", name, env!("CARGO_PKG_VERSION")),

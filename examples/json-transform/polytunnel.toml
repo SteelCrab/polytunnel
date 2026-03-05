@@ -1,0 +1,20 @@
+[project]
+name = "json-transform"
+java_version = "17"
+
+[build]
+source_dirs = ["src/main/java"]
+test_source_dirs = ["src/test/java"]
+output_dir = "target/classes"
+test_output_dir = "target/test-classes"
+
+[dependencies]
+"com.fasterxml.jackson.core:jackson-databind" = "2.16.1"
+"com.fasterxml.jackson.core:jackson-annotations" = "2.16.1"
+"com.fasterxml.jackson.datatype:jackson-datatype-jsr310" = "2.16.1"
+"org.junit.jupiter:junit-jupiter" = { version = "5.10.1", scope = "test" }
+"org.junit.platform:junit-platform-console-standalone" = { version = "1.10.1", scope = "test" }
+
+[[repositories]]
+name = "central"
+url = "https://repo1.maven.org/maven2/"
