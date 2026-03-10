@@ -964,7 +964,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "polytunnel"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -982,7 +982,7 @@ dependencies = [
 
 [[package]]
 name = "polytunnel-build"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "futures",
  "indicatif",
@@ -1000,7 +1000,7 @@ dependencies = [
 
 [[package]]
 name = "polytunnel-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -1009,7 +1009,7 @@ dependencies = [
 
 [[package]]
 name = "polytunnel-ide"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "colored",
  "polytunnel-build",
@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "polytunnel-maven"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "polytunnel-core",
  "quick-xml",
@@ -1037,7 +1037,7 @@ dependencies = [
 
 [[package]]
 name = "polytunnel-resolver"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "futures",
  "polytunnel-core",
