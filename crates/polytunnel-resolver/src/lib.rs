@@ -1,5 +1,7 @@
 //! Dependency resolution engine for Polytunnel
 
+#![warn(missing_docs)]
+
 mod error;
 mod graph;
 mod resolve;

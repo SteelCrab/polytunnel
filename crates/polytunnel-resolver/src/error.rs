@@ -20,16 +20,24 @@ pub enum ResolverError {
 
     /// Circular dependency detected
     #[error("Circular dependency detected: {path}")]
-    CircularDependency { path: String },
+    CircularDependency {
+        /// Dependency path that forms the cycle
+        path: String,
+    },
 
     /// Dependency not found
     #[error("Dependency not found: {coordinate}")]
-    DependencyNotFound { coordinate: String },
+    DependencyNotFound {
+        /// Coordinate of the missing dependency
+        coordinate: String,
+    },
 
     /// Version conflict
     #[error("Version conflict for {artifact}: {versions:?}")]
     VersionConflict {
+        /// Artifact identifier (`groupId:artifactId`)
         artifact: String,
+        /// Conflicting versions encountered during resolution
         versions: Vec<String>,
     },
 

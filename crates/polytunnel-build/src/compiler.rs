@@ -37,7 +37,7 @@ impl JavaCompiler {
     ///
     /// # Errors
     ///
-    /// * `AppError::JavacNotFound` - If javac cannot be found
+    /// * `BuildError::JavacNotFound` - If javac cannot be found
     ///
     /// # Example
     ///
@@ -68,8 +68,8 @@ impl JavaCompiler {
     ///
     /// # Errors
     ///
-    /// * `AppError::CompilationFailed` - If javac returns non-zero exit code
-    /// * `AppError::Io` - If file operations fail
+    /// * `BuildError::CompilationFailed` - If javac returns non-zero exit code
+    /// * `BuildError::Io` - If file operations fail
     ///
     /// # Example
     ///
@@ -103,7 +103,7 @@ impl JavaCompiler {
 
         // Add classpath if not empty
         if !classpath.is_empty() {
-            let classpath_str = Self::format_classpath(&classpath);
+            let classpath_str = crate::format_classpath(&classpath);
             cmd.arg("-cp").arg(classpath_str);
         }
 
@@ -189,36 +189,5 @@ impl JavaCompiler {
         }
 
         Err(BuildError::JavacNotFound)
-    }
-
-    /// Format classpath for command line
-    fn format_classpath(paths: &[PathBuf]) -> String {
-        let separator = if cfg!(windows) { ";" } else { ":" };
-        paths
-            .iter()
-            .map(|p| p.to_string_lossy().to_string())
-            .collect::<Vec<_>>()
-            .join(separator)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_classpath() {
-        let paths = vec![
-            PathBuf::from("/usr/lib/lib1.jar"),
-            PathBuf::from("/usr/lib/lib2.jar"),
-        ];
-        let result = JavaCompiler::format_classpath(&paths);
-        assert!(result.contains("lib1.jar"));
-        assert!(result.contains("lib2.jar"));
-        if cfg!(windows) {
-            assert!(result.contains(";"));
-        } else {
-            assert!(result.contains(":"));
-        }
     }
 }

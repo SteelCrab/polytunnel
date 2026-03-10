@@ -3,7 +3,7 @@
 //! Coordinates compilation, testing, and artifact management.
 
 use crate::error::{BuildError, Result};
-use crate::{BuildCache, ClasspathBuilder, JavaCompiler, TestResult, TestRunner};
+use crate::{BuildCache, ClasspathBuilder, JavaCompiler, TestResult};
 use polytunnel_core::ProjectConfig;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -43,11 +43,10 @@ pub struct BuildResult {
 
 /// Central orchestrator for build operations
 pub struct BuildOrchestrator {
+    /// Project configuration loaded from `polytunnel.toml`
     pub config: ProjectConfig,
     classpath_builder: ClasspathBuilder,
     compiler: JavaCompiler,
-    #[allow(dead_code)]
-    test_runner: Option<TestRunner>,
     incremental: BuildCache,
 }
 
@@ -81,7 +80,6 @@ impl BuildOrchestrator {
             config,
             classpath_builder,
             compiler,
-            test_runner: None,
             incremental,
         })
     }
@@ -134,14 +132,14 @@ impl BuildOrchestrator {
         if options.verbose {
             println!("Compiling main sources...");
         }
-        let compiled = self.compile_sources().await?;
+        let compiled = self.compile_sources()?;
 
         // 4. Compile and run tests (if not skipped)
         let test_result = if !options.skip_tests {
             if options.verbose {
                 println!("Compiling test sources...");
             }
-            self.compile_tests().await?;
+            self.compile_tests()?;
 
             if options.verbose {
                 println!("Running tests...");
@@ -174,7 +172,7 @@ impl BuildOrchestrator {
     }
 
     /// Compile main sources only
-    pub async fn compile_sources(&mut self) -> Result<usize> {
+    pub fn compile_sources(&mut self) -> Result<usize> {
         let source_dirs = &self.config.build.source_dirs;
         let output_dir = PathBuf::from(&self.config.build.output_dir);
         let compiler_args = self.config.build.compiler_args.clone();
@@ -205,7 +203,7 @@ impl BuildOrchestrator {
     }
 
     /// Compile test sources only
-    pub async fn compile_tests(&mut self) -> Result<()> {
+    pub fn compile_tests(&mut self) -> Result<()> {
         let test_source_dirs = &self.config.build.test_source_dirs;
         // ... (rest is unchanged logic, just ensuring pub)
         let test_output_dir = PathBuf::from(&self.config.build.test_output_dir);

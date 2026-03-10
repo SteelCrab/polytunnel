@@ -2,9 +2,10 @@
 //!
 //! Core types and utilities for the polytunnel Java dependency manager.
 
+#![warn(missing_docs)]
+
 mod config;
 mod error;
 
 pub use config::*;
-#[allow(deprecated)]
-pub use error::{AppError, CoreError, Result};
+pub use error::{CoreError, Result};

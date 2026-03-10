@@ -6,23 +6,28 @@ use crate::pom::Pom;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
 const MAVEN_CENTRAL_URL: &str = "https://repo1.maven.org/maven2";
 const MAVEN_SEARCH_URL: &str = "https://search.maven.org/solrsearch/select";
 
+/// Boxed future returned by [`MavenTransport::get`]
 pub type HttpTransportFuture = Pin<Box<dyn Future<Output = Result<HttpResponse>> + Send>>;
 
+/// Raw HTTP response from a transport
 #[derive(Clone)]
 pub struct HttpResponse {
+    /// HTTP status code (e.g. `200`, `404`)
     pub status: u16,
+    /// Response body bytes
     pub body: Vec<u8>,
 }
 
 /// Pluggable transport for testability and integration boundaries.
 pub trait MavenTransport: Send + Sync {
+    /// Perform an HTTP GET request and return the raw response
     fn get(&self, url: String) -> HttpTransportFuture;
 }
 
@@ -63,36 +68,49 @@ pub struct MavenClient {
 /// Search result from Maven Central
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchResponse {
+    /// Inner response body containing result count and documents
     pub response: SearchResponseBody,
 }
 
+/// Body of a Maven Central search response
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchResponseBody {
+    /// Total number of matching artifacts
     #[serde(rename = "numFound")]
     pub num_found: u32,
+    /// Matching artifact documents
     pub docs: Vec<SearchDoc>,
 }
 
+/// Single artifact document returned by Maven Central search
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchDoc {
+    /// Artifact ID in `groupId:artifactId:version` format
     pub id: String,
-    pub g: String, // groupId
-    pub a: String, // artifactId
+    /// Group ID
+    pub g: String,
+    /// Artifact ID
+    pub a: String,
+    /// Latest published version of this artifact
     #[serde(rename = "latestVersion")]
     pub latest_version: Option<String>,
+    /// Version for this specific search result (used in `core=gav` queries)
     #[serde(rename = "v")]
     pub version: Option<String>,
 }
 
 impl MavenClient {
+    /// Create a client that connects to Maven Central using the default reqwest transport
     pub fn new() -> Self {
         Self::with_transport(MAVEN_CENTRAL_URL, Arc::new(ReqwestTransport::new()))
     }
 
+    /// Create a client with a custom base URL using the default reqwest transport
     pub fn with_base_url(base_url: &str) -> Self {
         Self::with_transport(base_url, Arc::new(ReqwestTransport::new()))
     }
 
+    /// Create a client with a custom base URL and a pluggable transport (useful for testing)
     pub fn with_transport(base_url: &str, transport: Arc<dyn MavenTransport>) -> Self {
         Self {
             http: transport,
@@ -101,6 +119,7 @@ impl MavenClient {
         }
     }
 
+    /// Override the search URL (default: `https://search.maven.org/solrsearch/select`)
     pub fn with_search_url(mut self, search_url: &str) -> Self {
         self.search_url = search_url.to_string();
         self
@@ -195,20 +214,14 @@ impl MavenClient {
     }
 
     /// Download JAR to a path
-    pub async fn download_jar(
-        &self,
-        coord: &Coordinate,
-        dest: &PathBuf,
-        verbose: bool,
-    ) -> Result<()> {
+    pub async fn download_jar(&self, coord: &Coordinate, dest: &Path, verbose: bool) -> Result<()> {
         let url = self.jar_url(coord);
-        let request_url = url.clone();
 
         if verbose {
-            println!("   Downloading {}", coord);
+            eprintln!("   Downloading {}", coord);
         }
 
-        let response = self.http.get(request_url).await?;
+        let response = self.http.get(url.clone()).await?;
         if !(200..=299).contains(&response.status) {
             return Err(MavenError::HttpStatus {
                 status: response.status,
@@ -216,7 +229,7 @@ impl MavenClient {
             });
         }
 
-        std::fs::write(dest, response.body)?;
+        tokio::fs::write(dest, response.body).await?;
         Ok(())
     }
 }

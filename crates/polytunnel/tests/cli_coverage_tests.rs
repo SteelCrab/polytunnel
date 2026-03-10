@@ -159,6 +159,21 @@ fn test_test_command_runs_without_framework_dependency() -> Result<(), Box<dyn E
 }
 
 #[test]
+fn test_build_without_skip_tests_prints_test_result() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
+    write_minimal_project(dir.path())?;
+
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
+    cmd.current_dir(dir.path())
+        .arg("build")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("test result: ok."));
+
+    Ok(())
+}
+
+#[test]
 fn test_vscode_command_generates_project_files() -> Result<(), Box<dyn Error>> {
     let dir = tempdir()?;
     write_minimal_project(dir.path())?;
