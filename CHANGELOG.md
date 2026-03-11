@@ -7,49 +7,49 @@ All notable changes to this project will be documented here.
 ## ✨ [v0.2.0] — TBD
 
 > **Released:** TBD
-> `pt sync` & `pt tree` 명령어 추가, 내부 리팩토링, 보안 패치.
+> `pt sync` & `pt tree` commands, internal refactoring, security patch.
 
 ---
 
 ### ✨ Added
 
-- `pt sync` — 선언된 모든 의존성 해석 및 다운로드 (JAR 수 + 소요시간 리포트)
-- `pt tree` — cargo-tree 스타일 의존성 트리 출력 (중복 노드 `(*)` 표시)
-- `--verbose` 플래그: `sync`, `tree` 서브커맨드 지원
-- `format_classpath()` 공용 유틸리티 함수 추출 (`polytunnel-build`)
-- `#![warn(missing_docs)]` 전체 라이브러리 크레이트에 적용, 전체 public API doc comment 추가
-- `sync`/`tree` 유닛 테스트, `polytunnel-build` 테스트 스위트 확장
+- `pt sync` — resolve and download all declared dependencies (reports JAR count + elapsed time)
+- `pt tree` — cargo-tree style dependency tree output (duplicate nodes marked with `(*)`)
+- `--verbose` flag: supported for `sync` and `tree` subcommands
+- `format_classpath()` shared utility function extracted (`polytunnel-build`)
+- `#![warn(missing_docs)]` enabled across all library crates, full public API doc comments added
+- `sync`/`tree` unit tests, `polytunnel-build` test suite expanded
 
 ---
 
 ### ♻️ Changed
 
-- `polytunnel-build` 내부 모듈 `pub mod` → `mod` (API 표면 축소)
-- `cmd_build()` → `orchestrator.build()` 위임으로 단순화
-- `compile_sources()`/`compile_tests()`: `async fn` → `fn` (불필요한 async 제거)
-- `println!` → `eprintln!` 라이브러리 크레이트 전환 (stderr로 경고 출력)
-- `std::fs::write` → `tokio::fs::write` (`download_jar` 비동기 I/O 일관성)
-- `&PathBuf` → `&Path` (`download_jar` 시그니처 idiomatic Rust)
-- `DependencyScope`에 `Copy` derive 추가
-- `default_packaging()` 중복 제거 (단일 소스)
-- 하드코딩 버전 문자열 → `env!("CARGO_PKG_VERSION")`
-- deprecated `AppError` 타입 완전 제거
-- 인라인 `#[cfg(test)]` → `tests/` 디렉토리 이동 (`polytunnel-build`)
-- CLI에서 `polytunnel-resolver` 직접 의존성 제거
+- `polytunnel-build` internal modules `pub mod` → `mod` (reduced API surface)
+- `cmd_build()` → delegates to `orchestrator.build()` for simplicity
+- `compile_sources()`/`compile_tests()`: `async fn` → `fn` (removed unnecessary async)
+- `println!` → `eprintln!` in library crates (warnings now go to stderr)
+- `std::fs::write` → `tokio::fs::write` (consistent async I/O in `download_jar`)
+- `&PathBuf` → `&Path` (idiomatic Rust signature for `download_jar`)
+- Added `Copy` derive to `DependencyScope`
+- Deduplicated `default_packaging()` (single source of truth)
+- Hardcoded version string → `env!("CARGO_PKG_VERSION")`
+- Removed deprecated `AppError` type entirely
+- Inline `#[cfg(test)]` → moved to `tests/` directory (`polytunnel-build`)
+- Removed direct `polytunnel-resolver` dependency from CLI
 
 ---
 
 ### 🐛 Fixed
 
-- `pt test` 독립 실행 시 JUnit classpath 미해석 버그 수정 (의존성 해석 누락)
-- POM exclusion 파싱 버그 (`in_exclusion` 무시 → `Exclusion` 구조체에 수집)
-- Resolver `unwrap()` 체인 → proper error propagation (mutex poisoning 대응)
+- Fixed JUnit classpath not resolved when running `pt test` standalone (missing dependency resolution)
+- Fixed POM exclusion parsing bug (`in_exclusion` flag ignored → now collected into `Exclusion` struct)
+- Replaced Resolver `unwrap()` chains → proper error propagation (handles mutex poisoning)
 
 ---
 
 ### 🔒 Security
 
-- `quinn-proto` 보안 패치 (`0.11.13` → `0.11.14`)
+- Bumped `quinn-proto` security patch (`0.11.13` → `0.11.14`)
 
 ---
 
