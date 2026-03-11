@@ -35,10 +35,10 @@
 [x] 커버리지 확인 — 라인 커버리지 91.14% 달성
 
 ### CLI 완성
-[ ] `pt sync` 명령 구현: 선언된 의존성 전체 해석 및 다운로드
-    *(현재 `fix/cli-sync-tree-test` 브랜치에서 진행 중)*
-[ ] `pt tree` 명령 구현: 해석된 의존성 트리 출력
-    *(현재 `fix/cli-sync-tree-test` 브랜치에서 진행 중)*
+[x] `pt sync` 명령 구현: 선언된 의존성 전체 해석 및 다운로드
+[x] 동기화 불완전 상태 및 lockless 상태 검증 테스트 추가
+[x] `pt tree` 명령 구현: 해석된 의존성 트리 출력
+[x] `pt tree` 출력 포맷 정리 완료
 [ ] `pt add <coordinate>` 명령 구현 + 단위/통합 테스트
 [ ] `pt add` 시 중복 의존성 및 잘못된 좌표 입력 검증 강화
 [ ] `pt remove <coordinate>` 명령 구현 + 테스트

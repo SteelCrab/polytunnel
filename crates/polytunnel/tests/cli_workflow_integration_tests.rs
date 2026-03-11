@@ -168,18 +168,20 @@ fn test_vscode_generates_ide_artifacts() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn test_sync_and_tree_commands_are_executable() -> Result<(), Box<dyn Error>> {
-    Command::new(env!("CARGO_BIN_EXE_pt"))
-        .arg("sync")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Syncing"));
+fn test_sync_and_tree_commands_require_config() -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
 
     Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("sync")
+        .assert()
+        .failure();
+
+    Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
         .arg("tree")
         .assert()
-        .success()
-        .stdout(predicates::str::contains("Dependency tree"));
+        .failure();
 
     Ok(())
 }

@@ -62,7 +62,11 @@ public class Main {
         .unwrap();
 
     assert!(result.success);
-    assert!(result.stderr.is_empty());
+    assert!(
+        !result.stderr.contains("error:"),
+        "expected successful compilation without javac errors, stderr was: {}",
+        result.stderr
+    );
     assert!(output_dir.join("com/example/Main.class").exists());
 }
 

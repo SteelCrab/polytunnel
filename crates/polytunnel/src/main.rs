@@ -25,8 +25,8 @@ pub async fn run() -> Result<()> {
         Commands::Init { name } => cmd_init(&name)?,
         Commands::Add { dependency } => cmd_add(&dependency).await?,
         Commands::Remove { dependency } => cmd_remove(&dependency)?,
-        Commands::Sync => cmd_sync().await?,
-        Commands::Tree => cmd_tree().await?,
+        Commands::Sync { verbose } => cmd_sync(verbose).await?,
+        Commands::Tree { verbose } => cmd_tree(verbose).await?,
         Commands::Build {
             clean,
             skip_tests,

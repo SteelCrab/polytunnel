@@ -4,6 +4,55 @@ All notable changes to this project will be documented here.
 
 ---
 
+## ✨ [v0.2.0] — TBD
+
+> **Released:** TBD
+> `pt sync` & `pt tree` commands, internal refactoring, security patch.
+
+---
+
+### ✨ Added
+
+- `pt sync` — resolve and download all declared dependencies (reports JAR count + elapsed time)
+- `pt tree` — cargo-tree style dependency tree output (duplicate nodes marked with `(*)`)
+- `--verbose` flag: supported for `sync` and `tree` subcommands
+- `format_classpath()` shared utility function extracted (`polytunnel-build`)
+- `#![warn(missing_docs)]` enabled across all library crates, full public API doc comments added
+- `sync`/`tree` unit tests, `polytunnel-build` test suite expanded
+
+---
+
+### ♻️ Changed
+
+- `polytunnel-build` internal modules `pub mod` → `mod` (reduced API surface)
+- `cmd_build()` → delegates to `orchestrator.build()` for simplicity
+- `compile_sources()`/`compile_tests()`: `async fn` → `fn` (removed unnecessary async)
+- `println!` → `eprintln!` in library crates (warnings now go to stderr)
+- `std::fs::write` → `tokio::fs::write` (consistent async I/O in `download_jar`)
+- `&PathBuf` → `&Path` (idiomatic Rust signature for `download_jar`)
+- Added `Copy` derive to `DependencyScope`
+- Deduplicated `default_packaging()` (single source of truth)
+- Hardcoded version string → `env!("CARGO_PKG_VERSION")`
+- Removed deprecated `AppError` type entirely
+- Inline `#[cfg(test)]` → moved to `tests/` directory (`polytunnel-build`)
+- Removed direct `polytunnel-resolver` dependency from CLI
+
+---
+
+### 🐛 Fixed
+
+- Fixed JUnit classpath not resolved when running `pt test` standalone (missing dependency resolution)
+- Fixed POM exclusion parsing bug (`in_exclusion` flag ignored → now collected into `Exclusion` struct)
+- Replaced Resolver `unwrap()` chains → proper error propagation (handles mutex poisoning)
+
+---
+
+### 🔒 Security
+
+- Bumped `quinn-proto` security patch (`0.11.13` → `0.11.14`)
+
+---
+
 ## 🚀 [v0.1.0] — Initial Release
 
 > **Released:** 2026-02-18

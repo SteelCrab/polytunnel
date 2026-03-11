@@ -35,10 +35,10 @@
 [x] Validate coverage trend — achieved 91.14% line coverage.
 
 ### CLI Completeness
-[ ] Implement `pt sync` command: resolve and download all declared dependencies.
-    *(In progress on `fix/cli-sync-tree-test` branch.)*
-[ ] Implement `pt tree` command: display resolved dependency tree.
-    *(In progress on `fix/cli-sync-tree-test` branch.)*
+[x] Implement `pt sync` command: resolve and download all declared dependencies.
+[x] Add tests for lockless and partially synced states.
+[x] Implement `pt tree` command: display resolved dependency tree.
+[x] Finalize `pt tree` output formatting.
 [ ] Implement `pt add <coordinate>` command + unit/integration tests.
 [ ] Add validation for dependency duplicates and invalid coordinates on `pt add`.
 [ ] Implement `pt remove <coordinate>` command + tests.
