@@ -71,3 +71,5 @@ jobs:
     needs: [release, test, lint, security]
     uses: ./.github/workflows/publish.yml
     secrets: inherit
+    permissions:
+      contents: write
