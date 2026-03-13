@@ -226,7 +226,39 @@ jobs:
       - name: Run doc tests
         run: cargo test --doc --workspace --verbose
 
-  # Job 9: Code linting with Clippy
+  # Job 9: Build and test all example projects
+  test-examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-examples
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run example tests
+        run: bash scripts/test-examples.sh
+
+      - name: Upload example logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-logs
+          path: logs/examples/
+
+  # Job 10: Code linting with Clippy
   lint:
     name: Lint
     runs-on: ubuntu-latest

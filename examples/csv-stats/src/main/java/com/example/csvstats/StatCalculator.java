@@ -29,7 +29,7 @@ public class StatCalculator {
                 stats.getMax(),
                 stats.getMean(),
                 stats.getPercentile(50),
-                stats.getStandardDeviation(),
+                Math.sqrt(stats.getPopulationVariance()),
                 stats.getPercentile(25),
                 stats.getPercentile(75),
                 stats.getSum()
