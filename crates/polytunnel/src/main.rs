@@ -23,7 +23,7 @@ pub async fn run() -> Result<()> {
 
     match cli.command {
         Commands::Init { name } => cmd_init(&name)?,
-        Commands::Add { dependency } => cmd_add(&dependency).await?,
+        Commands::Add { dependency, scope } => cmd_add(&dependency, scope.as_deref())?,
         Commands::Remove { dependency } => cmd_remove(&dependency)?,
         Commands::Sync { verbose } => cmd_sync(verbose).await?,
         Commands::Tree { verbose } => cmd_tree(verbose).await?,
