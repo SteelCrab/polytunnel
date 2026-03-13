@@ -1,5 +1,6 @@
 //! Command implementations
 
+mod add;
 mod basic;
 mod build;
 mod init;
@@ -12,6 +13,7 @@ mod vscode;
 #[cfg(test)]
 mod tests;
 
+pub use add::*;
 pub use basic::*;
 pub use build::*;
 pub use init::*;

@@ -1,3 +1,4 @@
+use super::add::do_add;
 use super::init::do_init;
 use super::sync::format_duration;
 use super::tree::{parse_root_coords, render_tree};
@@ -357,4 +358,182 @@ async fn test_do_sync_missing_config() {
 
     let result = super::sync::do_sync(&config_path, false).await;
     assert!(result.is_err());
+}
+
+// === add tests ===
+
+#[test]
+fn test_add_simple_dependency() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    do_add("com.google.guava:guava:33.0.0-jre", None, &config_path)?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(content.contains("[dependencies]"));
+    assert!(content.contains("\"com.google.guava:guava\" = \"33.0.0-jre\""));
+    // Verify original content preserved
+    assert!(content.contains("name = \"test\""));
+    Ok(())
+}
+
+#[test]
+fn test_add_dependency_with_scope() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    do_add(
+        "org.junit.jupiter:junit-jupiter:5.10.1",
+        Some("test"),
+        &config_path,
+    )?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(content.contains("junit-jupiter"));
+    assert!(content.contains("scope"));
+    assert!(content.contains("test"));
+    Ok(())
+}
+
+#[test]
+fn test_add_duplicate_dependency_fails() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"com.google.guava:guava" = "32.0.0-jre"
+"#,
+    )?;
+
+    let result = do_add("com.google.guava:guava:33.0.0-jre", None, &config_path);
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("already exists"));
+    Ok(())
+}
+
+#[test]
+fn test_add_invalid_coordinate_no_version() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    let result = do_add("com.google.guava:guava", None, &config_path);
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_add_invalid_coordinate_empty_parts() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    let result = do_add("::1.0", None, &config_path);
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_add_invalid_scope() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    let result = do_add(
+        "com.google.guava:guava:33.0.0-jre",
+        Some("invalid"),
+        &config_path,
+    );
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_add_missing_config() {
+    let dir = tempdir().unwrap();
+    let config_path = dir.path().join("nonexistent.toml");
+
+    let result = do_add("com.google.guava:guava:33.0.0-jre", None, &config_path);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_add_preserves_existing_content() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    let original = r#"[project]
+name = "my-app"
+java_version = "21"
+
+# Build settings
+[build]
+source_dirs = ["src/main/java"]
+
+[dependencies]
+"org.slf4j:slf4j-api" = "2.0.9"
+"#;
+    fs::write(&config_path, original)?;
+
+    do_add("com.google.guava:guava:33.0.0-jre", None, &config_path)?;
+
+    let content = fs::read_to_string(&config_path)?;
+    // Original content preserved
+    assert!(content.contains("name = \"my-app\""));
+    assert!(content.contains("java_version = \"21\""));
+    assert!(content.contains("# Build settings")); // Comment preserved!
+    assert!(content.contains("\"org.slf4j:slf4j-api\" = \"2.0.9\""));
+    // New dependency added
+    assert!(content.contains("\"com.google.guava:guava\" = \"33.0.0-jre\""));
+    Ok(())
+}
+
+#[test]
+fn test_add_multiple_dependencies_sequentially() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    do_add("org.slf4j:slf4j-api:2.0.9", None, &config_path)?;
+    do_add("com.google.guava:guava:33.0.0-jre", None, &config_path)?;
+    do_add(
+        "org.junit.jupiter:junit-jupiter:5.10.1",
+        Some("test"),
+        &config_path,
+    )?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(content.contains("slf4j-api"));
+    assert!(content.contains("guava"));
+    assert!(content.contains("junit-jupiter"));
+
+    // Verify the file is still valid TOML and can be loaded
+    let config = polytunnel_core::ProjectConfig::load(&config_path)?;
+    assert_eq!(config.dependencies.len(), 3);
+    Ok(())
 }
