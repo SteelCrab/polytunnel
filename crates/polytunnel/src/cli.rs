@@ -23,9 +23,6 @@ pub enum Commands {
     Add {
         /// Dependency in format: groupId:artifactId:version
         dependency: String,
-        /// Dependency scope (compile, runtime, test, provided)
-        #[arg(short, long)]
-        scope: Option<String>,
     },
     /// Remove a dependency
     Remove {
