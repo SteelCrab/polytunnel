@@ -163,6 +163,6 @@ cargo clippy --workspace -- -D warnings
 cargo fmt --check
 ```
 
-## License
+## ko-fi ☕️
 
-Apache-2.0
+https://ko-fi.com/pistacrab
