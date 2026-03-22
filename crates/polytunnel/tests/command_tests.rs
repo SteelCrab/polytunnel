@@ -22,11 +22,25 @@ fn test_add_command_prints_action() {
 
 #[test]
 fn test_remove_command_prints_action() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        r#"[project]
+name = "demo"
+java_version = "17"
+
+[dependencies]
+"com.example:demo" = "1.0.0"
+"#,
+    )
+    .unwrap();
+
     Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
         .args(["remove", "com.example:demo"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("Removing"));
+        .stdout(predicates::str::contains("Removed"));
 }
 
 #[test]

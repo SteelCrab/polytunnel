@@ -1,5 +1,6 @@
 use super::add::do_add;
 use super::init::do_init;
+use super::remove::do_remove;
 use super::sync::format_duration;
 use super::tree::{parse_root_coords, render_tree};
 use color_eyre::eyre::Result;
@@ -535,5 +536,180 @@ fn test_add_multiple_dependencies_sequentially() -> Result<()> {
     // Verify the file is still valid TOML and can be loaded
     let config = polytunnel_core::ProjectConfig::load(&config_path)?;
     assert_eq!(config.dependencies.len(), 3);
+    Ok(())
+}
+
+// === remove tests ===
+
+#[test]
+fn test_remove_simple_dependency() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0-jre"
+"org.slf4j:slf4j-api" = "2.0.9"
+"#,
+    )?;
+
+    do_remove("com.google.guava:guava", &config_path)?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(!content.contains("guava"));
+    assert!(content.contains("slf4j-api"));
+    Ok(())
+}
+
+#[test]
+fn test_remove_scoped_dependency() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0-jre"
+"org.junit.jupiter:junit-jupiter" = { version = "5.10.1", scope = "test" }
+"#,
+    )?;
+
+    do_remove("org.junit.jupiter:junit-jupiter", &config_path)?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(!content.contains("junit-jupiter"));
+    assert!(content.contains("guava"));
+    Ok(())
+}
+
+#[test]
+fn test_remove_nonexistent_dependency_fails() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0-jre"
+"#,
+    )?;
+
+    let result = do_remove("org.nonexistent:lib", &config_path);
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("not found"));
+    Ok(())
+}
+
+#[test]
+fn test_remove_from_empty_dependencies_fails() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"#,
+    )?;
+
+    let result = do_remove("com.google.guava:guava", &config_path);
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_remove_missing_config() {
+    let dir = tempdir().unwrap();
+    let config_path = dir.path().join("nonexistent.toml");
+
+    let result = do_remove("com.google.guava:guava", &config_path);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_remove_invalid_coordinate() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"test\"\njava_version = \"17\"\n",
+    )?;
+
+    // Single part
+    let result = do_remove("guava", &config_path);
+    assert!(result.is_err());
+
+    // Three parts (with version)
+    let result = do_remove("com.google.guava:guava:33.0.0", &config_path);
+    assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_remove_preserves_existing_content() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "my-app"
+java_version = "21"
+
+# Build settings
+[build]
+source_dirs = ["src/main/java"]
+
+[dependencies]
+"org.slf4j:slf4j-api" = "2.0.9"
+"com.google.guava:guava" = "33.0.0-jre"
+"#,
+    )?;
+
+    do_remove("com.google.guava:guava", &config_path)?;
+
+    let content = fs::read_to_string(&config_path)?;
+    assert!(content.contains("name = \"my-app\""));
+    assert!(content.contains("java_version = \"21\""));
+    assert!(content.contains("# Build settings"));
+    assert!(content.contains("\"org.slf4j:slf4j-api\" = \"2.0.9\""));
+    assert!(!content.contains("guava"));
+    Ok(())
+}
+
+#[test]
+fn test_remove_then_readd() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        r#"[project]
+name = "test"
+java_version = "17"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0-jre"
+"#,
+    )?;
+
+    do_remove("com.google.guava:guava", &config_path)?;
+    let content = fs::read_to_string(&config_path)?;
+    assert!(!content.contains("guava"));
+
+    do_add("com.google.guava:guava:34.0.0-jre", None, &config_path)?;
+    let content = fs::read_to_string(&config_path)?;
+    assert!(content.contains("\"com.google.guava:guava\" = \"34.0.0-jre\""));
     Ok(())
 }

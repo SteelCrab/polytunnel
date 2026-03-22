@@ -43,6 +43,13 @@ pub enum CoreError {
         coordinate: String,
     },
 
+    /// Dependency not found in config
+    #[error("Dependency not found: {coordinate}")]
+    DependencyNotFound {
+        /// The coordinate key that was not found
+        coordinate: String,
+    },
+
     /// TOML edit error
     #[error("TOML edit error: {0}")]
     TomlEdit(#[from] toml_edit::TomlError),
