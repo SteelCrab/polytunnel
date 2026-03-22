@@ -39,8 +39,8 @@
 [x] Add tests for lockless and partially synced states.
 [x] Implement `pt tree` command: display resolved dependency tree.
 [x] Finalize `pt tree` output formatting.
-[ ] Implement `pt add <coordinate>` command + unit/integration tests.
-[ ] Add validation for dependency duplicates and invalid coordinates on `pt add`.
+[x] Implement `pt add <coordinate>` command + unit/integration tests.
+[x] Add validation for dependency duplicates and invalid coordinates on `pt add`.
 [ ] Implement `pt remove <coordinate>` command + tests.
 [ ] Handle file-backed rollback for partial remove failures.
 [ ] Implement `pt run <main-class>` command for running user-specified entry points.

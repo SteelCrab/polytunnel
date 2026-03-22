@@ -39,8 +39,8 @@
 [x] 동기화 불완전 상태 및 lockless 상태 검증 테스트 추가
 [x] `pt tree` 명령 구현: 해석된 의존성 트리 출력
 [x] `pt tree` 출력 포맷 정리 완료
-[ ] `pt add <coordinate>` 명령 구현 + 단위/통합 테스트
-[ ] `pt add` 시 중복 의존성 및 잘못된 좌표 입력 검증 강화
+[x] `pt add <coordinate>` 명령 구현 + 단위/통합 테스트
+[x] `pt add` 시 중복 의존성 및 잘못된 좌표 입력 검증 강화
 [ ] `pt remove <coordinate>` 명령 구현 + 테스트
 [ ] 부분 실패 대비 파일 기반 롤백 동작 보강
 [ ] `pt run <main-class>` 명령 구현으로 실행 엔트리 포인트 지원

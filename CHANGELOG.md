@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ---
 
-## ✨ [v0.2.0] — TBD
+## 🚀 [v0.2.0] — TBD
 
 > **Released:** TBD
 > `pt sync` & `pt tree` commands, internal refactoring, security patch.
@@ -13,10 +13,15 @@ All notable changes to this project will be documented here.
 
 ### ✨ Added
 
+**🖥️ CLI (`pt` command)**
 - `pt sync` — resolve and download all declared dependencies (reports JAR count + elapsed time)
 - `pt tree` — cargo-tree style dependency tree output (duplicate nodes marked with `(*)`)
 - `--verbose` flag: supported for `sync` and `tree` subcommands
-- `format_classpath()` shared utility function extracted (`polytunnel-build`)
+
+**⚙️ Build Engine (`polytunnel-build`)**
+- `format_classpath()` shared utility function extracted
+
+**📚 Code Quality**
 - `#![warn(missing_docs)]` enabled across all library crates, full public API doc comments added
 - `sync`/`tree` unit tests, `polytunnel-build` test suite expanded
 
