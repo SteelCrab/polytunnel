@@ -1,14 +1,23 @@
 //! Targeted CLI command behavior checks.
 
 use assert_cmd::Command;
+use std::fs;
 
 #[test]
 fn test_add_command_prints_action() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )
+    .unwrap();
+
     Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
         .args(["add", "com.example:demo:1.0.0"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("Adding"));
+        .stdout(predicates::str::contains("Added"));
 }
 
 #[test]
