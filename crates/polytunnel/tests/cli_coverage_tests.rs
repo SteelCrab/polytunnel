@@ -190,23 +190,43 @@ fn test_vscode_command_generates_project_files() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_add_command_runs() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )?;
+
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
-    cmd.arg("add")
+    cmd.current_dir(dir.path())
+        .arg("add")
         .arg("com.example:lib:1.0.0")
         .assert()
         .success()
-        .stdout(predicates::str::contains("Adding"));
+        .stdout(predicates::str::contains("Added"));
     Ok(())
 }
 
 #[test]
 fn test_remove_command_runs() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempdir()?;
+    fs::write(
+        dir.path().join("polytunnel.toml"),
+        r#"[project]
+name = "demo"
+java_version = "17"
+
+[dependencies]
+"com.example:lib" = "1.0.0"
+"#,
+    )?;
+
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
-    cmd.arg("remove")
+    cmd.current_dir(dir.path())
+        .arg("remove")
         .arg("com.example:lib")
         .assert()
         .success()
-        .stdout(predicates::str::contains("Removing"));
+        .stdout(predicates::str::contains("Removed"));
     Ok(())
 }
 

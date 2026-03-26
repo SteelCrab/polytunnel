@@ -202,3 +202,133 @@ impl Dependency {
         }
     }
 }
+
+/// Validate Maven coordinate string and return `(ga_key, version)` pair.
+///
+/// Accepts `"groupId:artifactId:version"` format only.
+/// Returns `CoreError::InvalidCoordinate` on failure.
+pub fn parse_add_coordinate(input: &str) -> Result<(String, String)> {
+    let parts: Vec<&str> = input.split(':').collect();
+    if parts.len() != 3 {
+        return Err(crate::error::CoreError::InvalidCoordinate {
+            message: format!("expected format 'groupId:artifactId:version', got '{input}'"),
+        });
+    }
+
+    let group_id = parts[0];
+    let artifact_id = parts[1];
+    let version = parts[2];
+
+    if group_id.is_empty() || artifact_id.is_empty() || version.is_empty() {
+        return Err(crate::error::CoreError::InvalidCoordinate {
+            message: format!("groupId, artifactId, and version must not be empty: '{input}'"),
+        });
+    }
+
+    let ga_key = format!("{group_id}:{artifact_id}");
+    Ok((ga_key, version.to_string()))
+}
+
+/// Add a dependency to a TOML config file, preserving formatting and comments.
+///
+/// If the `[dependencies]` table does not exist it is created.
+/// Returns `CoreError::DuplicateDependency` when the same `ga_key` is already present.
+pub fn add_dependency_to_file(
+    path: &Path,
+    ga_key: &str,
+    version: &str,
+    scope: Option<DependencyScope>,
+) -> Result<()> {
+    let content = std::fs::read_to_string(path)?;
+    let mut doc: toml_edit::DocumentMut = content.parse::<toml_edit::DocumentMut>()?;
+
+    // Ensure [dependencies] table exists
+    if !doc.contains_table("dependencies") {
+        doc["dependencies"] = toml_edit::Item::Table(toml_edit::Table::new());
+    }
+
+    let deps = doc["dependencies"]
+        .as_table_mut()
+        .expect("dependencies should be a table");
+
+    // Check for duplicate
+    if deps.contains_key(ga_key) {
+        return Err(crate::error::CoreError::DuplicateDependency {
+            coordinate: ga_key.to_string(),
+        });
+    }
+
+    // Insert dependency: simple string for Compile scope, inline table otherwise
+    match scope {
+        None | Some(DependencyScope::Compile) => {
+            deps[ga_key] = toml_edit::value(version);
+        }
+        Some(s) => {
+            let mut inline = toml_edit::InlineTable::new();
+            inline.insert("version", version.into());
+            inline.insert("scope", scope_to_toml_str(s).into());
+            deps[ga_key] = toml_edit::value(inline);
+        }
+    }
+
+    std::fs::write(path, doc.to_string())?;
+    Ok(())
+}
+
+/// Validate a remove coordinate and return the `ga_key`.
+///
+/// Accepts `"groupId:artifactId"` format only (no version).
+/// Returns `CoreError::InvalidCoordinate` on failure.
+pub fn parse_remove_coordinate(input: &str) -> Result<String> {
+    let parts: Vec<&str> = input.split(':').collect();
+    if parts.len() != 2 {
+        return Err(crate::error::CoreError::InvalidCoordinate {
+            message: format!("expected format 'groupId:artifactId', got '{input}'"),
+        });
+    }
+
+    let group_id = parts[0];
+    let artifact_id = parts[1];
+
+    if group_id.is_empty() || artifact_id.is_empty() {
+        return Err(crate::error::CoreError::InvalidCoordinate {
+            message: format!("groupId and artifactId must not be empty: '{input}'"),
+        });
+    }
+
+    Ok(input.to_string())
+}
+
+/// Remove a dependency from a TOML config file, preserving formatting and comments.
+///
+/// Returns `CoreError::DependencyNotFound` when the `ga_key` is not present.
+pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
+    let content = std::fs::read_to_string(path)?;
+    let mut doc: toml_edit::DocumentMut = content.parse::<toml_edit::DocumentMut>()?;
+
+    let deps = doc
+        .get_mut("dependencies")
+        .and_then(|d| d.as_table_mut())
+        .ok_or_else(|| crate::error::CoreError::DependencyNotFound {
+            coordinate: ga_key.to_string(),
+        })?;
+
+    if !deps.contains_key(ga_key) {
+        return Err(crate::error::CoreError::DependencyNotFound {
+            coordinate: ga_key.to_string(),
+        });
+    }
+
+    deps.remove(ga_key);
+    std::fs::write(path, doc.to_string())?;
+    Ok(())
+}
+
+fn scope_to_toml_str(scope: DependencyScope) -> &'static str {
+    match scope {
+        DependencyScope::Compile => "compile",
+        DependencyScope::Runtime => "runtime",
+        DependencyScope::Test => "test",
+        DependencyScope::Provided => "provided",
+    }
+}

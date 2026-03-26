@@ -32,13 +32,16 @@ build.gradle
 .claude/
 .gemini/
 .qodo/
+CLAUDE.md
 
 # Polytunnel
 .polytunnel/
 polytunnel.lock
+logs/
 
 # Document
 docs/
 
-
+# Misc
 AGENTS.md
+scripts/
