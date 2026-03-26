@@ -32,3 +32,60 @@ fn test_parse_coordinate_too_many_parts() {
     // 4+ parts should fail (we only accept groupId:artifactId:version)
     assert!(parse_add_coordinate("a:b:c:d").is_err());
 }
+
+// --- add_dependency_to_file tests ---
+
+use polytunnel_core::{DependencyScope, add_dependency_to_file};
+use std::fs;
+
+#[test]
+fn test_add_dependency_with_runtime_scope() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("polytunnel.toml");
+    fs::write(&path, "[project]\nname = \"demo\"\njava_version = \"17\"\n").unwrap();
+
+    add_dependency_to_file(
+        &path,
+        "com.example:lib",
+        "2.0.0",
+        Some(DependencyScope::Runtime),
+    )
+    .unwrap();
+
+    let content = fs::read_to_string(&path).unwrap();
+    assert!(content.contains("com.example:lib"));
+    assert!(content.contains("runtime"));
+}
+
+#[test]
+fn test_add_dependency_with_test_scope() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("polytunnel.toml");
+    fs::write(&path, "[project]\nname = \"demo\"\njava_version = \"17\"\n").unwrap();
+
+    add_dependency_to_file(
+        &path,
+        "org.junit:junit",
+        "5.10.0",
+        Some(DependencyScope::Test),
+    )
+    .unwrap();
+
+    let content = fs::read_to_string(&path).unwrap();
+    assert!(content.contains("org.junit:junit"));
+    assert!(content.contains("test"));
+}
+
+#[test]
+fn test_add_dependency_duplicate_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &path,
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n\n[dependencies]\n\"com.example:lib\" = \"1.0.0\"\n",
+    )
+    .unwrap();
+
+    let result = add_dependency_to_file(&path, "com.example:lib", "2.0.0", None);
+    assert!(result.is_err());
+}

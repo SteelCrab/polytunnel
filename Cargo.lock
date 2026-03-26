@@ -1003,6 +1003,7 @@ name = "polytunnel-core"
 version = "0.2.0"
 dependencies = [
  "serde",
+ "tempfile",
  "thiserror",
  "toml",
  "toml_edit",
