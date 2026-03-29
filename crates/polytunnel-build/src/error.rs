@@ -25,6 +25,17 @@ pub enum BuildError {
         message: String,
     },
 
+    /// Java runtime (java) not found in PATH
+    #[error("Java runtime (java) not found in PATH")]
+    JavaNotFound,
+
+    /// Java execution failed
+    #[error("Java execution failed: {message}")]
+    JavaExecutionFailed {
+        /// Description of the execution failure
+        message: String,
+    },
+
     /// Test execution failed
     #[error("Test execution failed: {message}")]
     TestExecutionFailed {
