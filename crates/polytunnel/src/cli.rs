@@ -72,6 +72,20 @@ pub enum Commands {
         #[arg(long)]
         fail_fast: bool,
     },
+    /// Run a Java application
+    Run {
+        /// Fully qualified main class name (e.g., com.example.Main)
+        #[arg(value_name = "MAIN_CLASS")]
+        main_class: String,
+
+        /// Arguments to pass to the Java application
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+
+        /// Verbose output
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Generate VS Code configuration
     Vscode,
 }
