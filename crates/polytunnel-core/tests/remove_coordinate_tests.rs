@@ -1,5 +1,6 @@
 use polytunnel_core::{parse_remove_coordinate, remove_dependency_from_file};
 use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use tempfile::NamedTempFile;
 
 #[test]
@@ -74,5 +75,36 @@ name = "test"
     assert!(
         content.contains("guava"),
         "original content should be intact"
+    );
+}
+
+#[test]
+fn remove_restores_from_backup_on_write_failure() {
+    let mut file = NamedTempFile::with_suffix(".toml").unwrap();
+    let original = r#"[project]
+name = "test"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0"
+"#;
+    write!(file, "{original}").unwrap();
+
+    let path = file.path().to_path_buf();
+    let backup_path = path.with_extension("toml.bak");
+
+    // Make file read-only so write fails after backup is created
+    let perms = std::fs::Permissions::from_mode(0o444);
+    std::fs::set_permissions(&path, perms).unwrap();
+
+    let result = remove_dependency_from_file(&path, "com.google.guava:guava");
+    assert!(result.is_err(), "write to read-only file should fail");
+
+    // Restore write permission for cleanup
+    let perms = std::fs::Permissions::from_mode(0o644);
+    let _ = std::fs::set_permissions(&path, perms);
+
+    assert!(
+        !backup_path.exists(),
+        "backup should be cleaned up after rollback"
     );
 }
