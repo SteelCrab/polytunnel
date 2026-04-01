@@ -50,6 +50,15 @@ pub enum CoreError {
         coordinate: String,
     },
 
+    /// Rollback failed after a write error — the config file may be in an inconsistent state
+    #[error("Rollback failed ({rollback_error}) after write error: {write_error}")]
+    RollbackFailed {
+        /// The original write error
+        write_error: String,
+        /// The error that occurred while trying to restore the backup
+        rollback_error: String,
+    },
+
     /// TOML edit error
     #[error("TOML edit error: {0}")]
     TomlEdit(#[from] toml_edit::TomlError),

@@ -323,7 +323,7 @@ pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
 
     deps.remove(ga_key);
 
-    let backup_path = path.with_extension("toml.bak");
+    let backup_path = unique_backup_path(path);
     std::fs::copy(path, &backup_path)?;
 
     match std::fs::write(path, doc.to_string()) {
@@ -332,10 +332,35 @@ pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
             Ok(())
         }
         Err(e) => {
-            let _ = std::fs::copy(&backup_path, path);
+            if let Err(rollback_err) = std::fs::copy(&backup_path, path) {
+                let _ = std::fs::remove_file(&backup_path);
+                return Err(crate::error::CoreError::RollbackFailed {
+                    write_error: e.to_string(),
+                    rollback_error: rollback_err.to_string(),
+                });
+            }
             let _ = std::fs::remove_file(&backup_path);
             Err(e.into())
         }
+    }
+}
+
+/// Build a backup path that does not collide with any existing file.
+///
+/// Tries `<stem>.toml.bak` first, then `<stem>.toml.bak.1`, `.bak.2`, etc.
+fn unique_backup_path(path: &Path) -> std::path::PathBuf {
+    let base = path.with_extension("toml.bak");
+    if !base.exists() {
+        return base;
+    }
+    let base_str = base.to_string_lossy().into_owned();
+    let mut n = 1u32;
+    loop {
+        let candidate = std::path::PathBuf::from(format!("{base_str}.{n}"));
+        if !candidate.exists() {
+            return candidate;
+        }
+        n += 1;
     }
 }
 

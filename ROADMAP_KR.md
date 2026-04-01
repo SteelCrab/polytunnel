@@ -41,9 +41,9 @@
 [x] `pt tree` 출력 포맷 정리 완료
 [x] `pt add <coordinate>` 명령 구현 + 단위/통합 테스트
 [x] `pt add` 시 중복 의존성 및 잘못된 좌표 입력 검증 강화
-[ ] `pt remove <coordinate>` 명령 구현 + 테스트
-[ ] 부분 실패 대비 파일 기반 롤백 동작 보강
-[ ] `pt run <main-class>` 명령 구현으로 실행 엔트리 포인트 지원
+[x] `pt remove <coordinate>` 명령 구현 + 테스트
+[x] 부분 실패 대비 파일 기반 롤백 동작 보강
+[x] `pt run <main-class>` 명령 구현으로 실행 엔트리 포인트 지원
 [ ] 신규 명령 전체의 사용법 및 종료 코드 문서 정비
 
 ---
@@ -78,6 +78,13 @@
 [ ] `polytunnel-gradle` crate 구현: Gradle Plugin Portal HTTP 클라이언트 및 POM 해석
 [ ] `build.gradle` / `build.gradle.kts` 의존성 블록 파싱 (공통 부분집합)
 [ ] `pt migrate` 구현: `build.gradle` → `polytunnel.toml` 변환
+[ ] `pt export gradle` 구현: `polytunnel.toml` → `build.gradle.kts` 변환
+
+### 네이티브 이미지 (GraalVM)
+[ ] GraalVM `native-image` PATH 감지 및 버전 검증
+[ ] `pt build --native` 구현: GraalVM Native Image를 통한 AOT 네이티브 바이너리 컴파일
+[ ] 주요 라이브러리용 리플렉션/리소스 설정 자동 생성
+[ ] `polytunnel.toml` `[native]` 섹션으로 Native Image 옵션 지원
 
 ### 어노테이션 프로세서
 [ ] Lombok 어노테이션 프로세서 지원 (소스 유지, `delombok` 통합)

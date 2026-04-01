@@ -41,9 +41,9 @@
 [x] Finalize `pt tree` output formatting.
 [x] Implement `pt add <coordinate>` command + unit/integration tests.
 [x] Add validation for dependency duplicates and invalid coordinates on `pt add`.
-[ ] Implement `pt remove <coordinate>` command + tests.
-[ ] Handle file-backed rollback for partial remove failures.
-[ ] Implement `pt run <main-class>` command for running user-specified entry points.
+[x] Implement `pt remove <coordinate>` command + tests.
+[x] Handle file-backed rollback for partial remove failures.
+[x] Implement `pt run <main-class>` command for running user-specified entry points.
 [ ] Add docs for all new command usage and exit-code expectations.
 
 ---
@@ -78,6 +78,13 @@
 [ ] Implement `polytunnel-gradle` crate: Gradle Plugin Portal HTTP client and POM resolution.
 [ ] Parse `build.gradle` / `build.gradle.kts` dependency blocks (common subset).
 [ ] Implement `pt migrate`: convert `build.gradle` to `polytunnel.toml`.
+[ ] Implement `pt export gradle`: convert `polytunnel.toml` to `build.gradle.kts`.
+
+### Native Image (GraalVM)
+[ ] Detect GraalVM `native-image` in PATH and validate version.
+[ ] Implement `pt build --native`: AOT compile to native binary via GraalVM Native Image.
+[ ] Auto-generate reflection/resource config for common libraries.
+[ ] Support `polytunnel.toml` `[native]` section for Native Image options.
 
 ### Annotation Processors
 [ ] Lombok annotation processor support (source-retention, `delombok` integration).

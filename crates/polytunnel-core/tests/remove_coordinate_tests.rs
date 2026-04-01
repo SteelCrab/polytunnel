@@ -108,3 +108,33 @@ name = "test"
         "backup should be cleaned up after rollback"
     );
 }
+
+#[test]
+fn remove_does_not_clobber_existing_backup() {
+    let mut file = NamedTempFile::with_suffix(".toml").unwrap();
+    writeln!(
+        file,
+        r#"[project]
+name = "test"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0"
+"#
+    )
+    .unwrap();
+
+    let path = file.path().to_path_buf();
+    let existing_backup = path.with_extension("toml.bak");
+
+    // Create a pre-existing backup with unrelated content
+    std::fs::write(&existing_backup, "do not touch").unwrap();
+
+    remove_dependency_from_file(&path, "com.google.guava:guava").unwrap();
+
+    // Pre-existing backup must survive
+    let backup_content = std::fs::read_to_string(&existing_backup).unwrap();
+    assert_eq!(backup_content, "do not touch");
+
+    // Clean up
+    let _ = std::fs::remove_file(&existing_backup);
+}
