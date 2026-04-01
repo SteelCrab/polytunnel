@@ -301,6 +301,8 @@ pub fn parse_remove_coordinate(input: &str) -> Result<String> {
 
 /// Remove a dependency from a TOML config file, preserving formatting and comments.
 ///
+/// Creates a backup (`.bak`) before writing. On success the backup is removed.
+/// On write failure the original file is restored from the backup.
 /// Returns `CoreError::DependencyNotFound` when the `ga_key` is not present.
 pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
     let content = std::fs::read_to_string(path)?;
@@ -320,8 +322,21 @@ pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
     }
 
     deps.remove(ga_key);
-    std::fs::write(path, doc.to_string())?;
-    Ok(())
+
+    let backup_path = path.with_extension("toml.bak");
+    std::fs::copy(path, &backup_path)?;
+
+    match std::fs::write(path, doc.to_string()) {
+        Ok(()) => {
+            let _ = std::fs::remove_file(&backup_path);
+            Ok(())
+        }
+        Err(e) => {
+            let _ = std::fs::copy(&backup_path, path);
+            let _ = std::fs::remove_file(&backup_path);
+            Err(e.into())
+        }
+    }
 }
 
 fn scope_to_toml_str(scope: DependencyScope) -> &'static str {
