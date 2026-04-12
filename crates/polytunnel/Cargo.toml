@@ -13,6 +13,7 @@ polytunnel-maven.path = "../polytunnel-maven"
 polytunnel-resolver.path = "../polytunnel-resolver"
 polytunnel-build.path = "../polytunnel-build"
 polytunnel-ide.path = "../polytunnel-ide"
+polytunnel-tui.path = "../polytunnel-tui"
 clap.workspace = true
 tokio.workspace = true
 colored = "2.1"

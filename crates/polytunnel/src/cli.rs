@@ -74,4 +74,6 @@ pub enum Commands {
     },
     /// Generate VS Code configuration
     Vscode,
+    /// Launch interactive TUI dashboard
+    Tui,
 }

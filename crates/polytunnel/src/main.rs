@@ -38,6 +38,9 @@ pub async fn run() -> Result<()> {
             fail_fast,
         } => cmd_test(pattern, verbose, fail_fast).await?,
         Commands::Vscode => cmd_vscode().await?,
+        Commands::Tui => {
+            polytunnel_tui::run_tui(std::path::PathBuf::from("polytunnel.toml")).await?
+        }
     }
 
     Ok(())

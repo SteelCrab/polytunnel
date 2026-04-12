@@ -1,0 +1,13 @@
+[package]
+name = "polytunnel-tui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+polytunnel-core.path = "../polytunnel-core"
+polytunnel-resolver.path = "../polytunnel-resolver"
+polytunnel-maven.path = "../polytunnel-maven"
+ratatui.workspace = true
+crossterm.workspace = true
+color-eyre.workspace = true
+tokio.workspace = true
