@@ -757,3 +757,121 @@ async fn test_run_whitespace_only_main_class() -> Result<()> {
     assert!(result.is_err());
     Ok(())
 }
+
+fn java_toolchain_available() -> bool {
+    std::process::Command::new("javac")
+        .arg("--version")
+        .output()
+        .is_ok()
+        && std::process::Command::new("java")
+            .arg("--version")
+            .output()
+            .is_ok()
+}
+
+fn write_run_project(dir: &std::path::Path, main_body: &str) -> Result<std::path::PathBuf> {
+    let src_dir = dir.join("src/main/java/com/example");
+    fs::create_dir_all(&src_dir)?;
+    fs::create_dir_all(dir.join("src/test/java"))?;
+
+    fs::write(
+        src_dir.join("Hello.java"),
+        format!(
+            "package com.example; public class Hello {{ public static void main(String[] args) {{ {} }} }}",
+            main_body
+        ),
+    )?;
+
+    let config_path = dir.join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        format!(
+            r#"[project]
+name = "run-demo"
+java_version = "17"
+
+[build]
+source_dirs = ["{src}"]
+test_source_dirs = ["{test_src}"]
+output_dir = "{out}"
+test_output_dir = "{test_out}"
+cache_dir = "{cache}"
+"#,
+            src = dir.join("src/main/java").display(),
+            test_src = dir.join("src/test/java").display(),
+            out = dir.join("target/classes").display(),
+            test_out = dir.join("target/test-classes").display(),
+            cache = dir.join(".polytunnel/cache").display(),
+        ),
+    )?;
+    Ok(config_path)
+}
+
+#[tokio::test]
+async fn test_run_executes_main_class_successfully() -> Result<()> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    let config_path = write_run_project(dir.path(), r#"System.out.println("ok");"#)?;
+
+    let exit_code = do_run("com.example.Hello", &[], false, &config_path).await?;
+    assert_eq!(exit_code, 0);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_run_propagates_nonzero_exit_code() -> Result<()> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    let config_path = write_run_project(dir.path(), "System.exit(7);")?;
+
+    let exit_code = do_run("com.example.Hello", &[], false, &config_path).await?;
+    assert_eq!(exit_code, 7);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_run_passes_args_to_main() -> Result<()> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    let config_path = write_run_project(
+        dir.path(),
+        r#"if (args.length != 2 || !args[0].equals("foo") || !args[1].equals("bar")) System.exit(2);"#,
+    )?;
+
+    let exit_code = do_run(
+        "com.example.Hello",
+        &["foo".to_string(), "bar".to_string()],
+        false,
+        &config_path,
+    )
+    .await?;
+    assert_eq!(exit_code, 0);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_run_verbose_mode_executes() -> Result<()> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    let config_path = write_run_project(dir.path(), r#"System.out.println("verbose ok");"#)?;
+
+    let exit_code = do_run("com.example.Hello", &[], true, &config_path).await?;
+    assert_eq!(exit_code, 0);
+    Ok(())
+}
