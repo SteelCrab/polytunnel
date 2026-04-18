@@ -66,6 +66,104 @@ fn run_fails_with_empty_main_class() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn java_toolchain_available() -> bool {
+    std::process::Command::new("javac")
+        .arg("--version")
+        .output()
+        .is_ok()
+        && std::process::Command::new("java")
+            .arg("--version")
+            .output()
+            .is_ok()
+}
+
+fn write_run_fixture(dir: &Path, main_body: &str) -> Result<(), Box<dyn Error>> {
+    let src_dir = dir.join("src/main/java/com/example");
+    fs::create_dir_all(&src_dir)?;
+    fs::create_dir_all(dir.join("src/test/java"))?;
+
+    fs::write(
+        src_dir.join("Hello.java"),
+        format!(
+            "package com.example; public class Hello {{ public static void main(String[] args) {{ {} }} }}",
+            main_body
+        ),
+    )?;
+
+    fs::write(
+        dir.join("polytunnel.toml"),
+        format!(
+            r#"[project]
+name = "cli-run-demo"
+java_version = "17"
+
+[build]
+source_dirs = ["{src}"]
+test_source_dirs = ["{test_src}"]
+output_dir = "{out}"
+test_output_dir = "{test_out}"
+cache_dir = "{cache}"
+"#,
+            src = dir.join("src/main/java").display(),
+            test_src = dir.join("src/test/java").display(),
+            out = dir.join("target/classes").display(),
+            test_out = dir.join("target/test-classes").display(),
+            cache = dir.join(".polytunnel/cache").display(),
+        ),
+    )?;
+    Ok(())
+}
+
+#[test]
+fn run_cli_succeeds_when_main_exits_zero() -> Result<(), Box<dyn Error>> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    write_run_fixture(dir.path(), r#"System.out.println("ok");"#)?;
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("run")
+        .arg("com.example.Hello")
+        .output()?;
+
+    assert!(
+        output.status.success(),
+        "expected exit 0, got {:?}. stderr: {}",
+        output.status.code(),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+#[test]
+fn run_cli_propagates_nonzero_exit_code() -> Result<(), Box<dyn Error>> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    write_run_fixture(dir.path(), "System.exit(42);")?;
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("run")
+        .arg("com.example.Hello")
+        .output()?;
+
+    assert_eq!(
+        output.status.code(),
+        Some(42),
+        "expected cmd_run to propagate exit code 42 via std::process::exit. stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
 #[test]
 fn run_accepts_trailing_args() -> Result<(), Box<dyn Error>> {
     // Prove clap accepted `-- --flag value --help` and execution reached do_run
