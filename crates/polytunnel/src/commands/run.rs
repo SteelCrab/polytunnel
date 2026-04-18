@@ -26,7 +26,8 @@ pub(crate) async fn do_run(
         bail!("polytunnel.toml not found. Run `pt init` first.");
     }
 
-    if main_class.trim().is_empty() {
+    let main_class = main_class.trim();
+    if main_class.is_empty() {
         bail!("Main class must not be empty.");
     }
 
@@ -70,7 +71,9 @@ pub(crate) async fn do_run(
 
 fn build_run_classpath(orchestrator: &BuildOrchestrator, output_dir: &Path) -> String {
     let classpaths = orchestrator.get_resolved_classpath();
-    let mut entries = classpaths.runtime_classpath.clone();
-    entries.push(output_dir.to_path_buf());
+    // Project classes must precede dependencies so local overrides win against
+    // identically-named classes that may exist in resolved jars.
+    let mut entries = vec![output_dir.to_path_buf()];
+    entries.extend(classpaths.runtime_classpath.iter().cloned());
     format_classpath(&entries)
 }

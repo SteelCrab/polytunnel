@@ -67,15 +67,26 @@ fn run_fails_with_empty_main_class() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn run_accepts_trailing_args() {
-    // Verify CLI parses `-- arg1 arg2` as trailing args (no execution check here)
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pt"));
-    cmd.arg("run")
+fn run_accepts_trailing_args() -> Result<(), Box<dyn Error>> {
+    // Prove clap accepted `-- --flag value --help` and execution reached do_run
+    // by asserting the missing-config error (not a clap parse error).
+    let dir = tempdir()?;
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_pt"))
+        .current_dir(dir.path())
+        .arg("run")
         .arg("com.example.App")
         .arg("--")
         .arg("--flag")
         .arg("value")
         .arg("--help")
-        .assert()
-        .failure(); // fails because no polytunnel.toml, but parser accepts args
+        .output()?;
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("polytunnel.toml not found"),
+        "expected missing-config error, got stderr: {stderr}"
+    );
+    Ok(())
 }

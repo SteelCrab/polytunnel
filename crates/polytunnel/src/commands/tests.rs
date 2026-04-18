@@ -875,3 +875,19 @@ async fn test_run_verbose_mode_executes() -> Result<()> {
     assert_eq!(exit_code, 0);
     Ok(())
 }
+
+#[tokio::test]
+async fn test_run_trims_main_class() -> Result<()> {
+    if !java_toolchain_available() {
+        eprintln!("Skipping: javac/java not available");
+        return Ok(());
+    }
+
+    let dir = tempdir()?;
+    let config_path = write_run_project(dir.path(), r#"System.out.println("trimmed ok");"#)?;
+
+    // Leading/trailing whitespace must be stripped before reaching java
+    let exit_code = do_run("  com.example.Hello\t", &[], false, &config_path).await?;
+    assert_eq!(exit_code, 0);
+    Ok(())
+}
