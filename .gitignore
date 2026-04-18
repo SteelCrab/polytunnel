@@ -41,6 +41,7 @@ logs/
 
 # Document
 docs/
+.icebox/*
 
 # Misc
 AGENTS.md
