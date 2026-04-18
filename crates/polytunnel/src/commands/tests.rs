@@ -1,6 +1,7 @@
 use super::add::do_add;
 use super::init::do_init;
 use super::remove::do_remove;
+use super::run::do_run;
 use super::sync::format_duration;
 use super::tree::{parse_root_coords, render_tree};
 use color_eyre::eyre::Result;
@@ -711,5 +712,48 @@ java_version = "17"
     do_add("com.google.guava:guava:34.0.0-jre", None, &config_path)?;
     let content = fs::read_to_string(&config_path)?;
     assert!(content.contains("\"com.google.guava:guava\" = \"34.0.0-jre\""));
+    Ok(())
+}
+
+// === run tests ===
+
+#[tokio::test]
+async fn test_run_missing_config() {
+    let dir = tempdir().unwrap();
+    let config_path = dir.path().join("nonexistent.toml");
+
+    let result = do_run("com.example.App", &[], false, &config_path).await;
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("polytunnel.toml not found"));
+}
+
+#[tokio::test]
+async fn test_run_empty_main_class() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )?;
+
+    let result = do_run("", &[], false, &config_path).await;
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("Main class must not be empty"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_run_whitespace_only_main_class() -> Result<()> {
+    let dir = tempdir()?;
+    let config_path = dir.path().join("polytunnel.toml");
+    fs::write(
+        &config_path,
+        "[project]\nname = \"demo\"\njava_version = \"17\"\n",
+    )?;
+
+    let result = do_run("   ", &[], false, &config_path).await;
+    assert!(result.is_err());
     Ok(())
 }

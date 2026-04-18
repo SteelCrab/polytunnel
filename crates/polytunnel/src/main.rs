@@ -37,6 +37,11 @@ pub async fn run() -> Result<()> {
             verbose,
             fail_fast,
         } => cmd_test(pattern, verbose, fail_fast).await?,
+        Commands::Run {
+            main_class,
+            args,
+            verbose,
+        } => cmd_run(&main_class, &args, verbose).await?,
         Commands::Vscode => cmd_vscode().await?,
     }
 
