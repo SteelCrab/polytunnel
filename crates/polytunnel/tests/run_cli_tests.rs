@@ -69,8 +69,8 @@ fn run_cli_propagates_nonzero_exit_code() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn run_accepts_trailing_args() {
-    // clap 이 `-- --flag value --help` 를 인자로 받아들였음을 증명하기 위해
-    // polytunnel.toml 부재로 인한 missing-config 에러가 stderr 에 떠야 함.
+    // Prove clap accepted `-- --flag value --help` as trailing args by asserting
+    // the missing-config error (reached do_run), not a clap parse error.
     let dir = tempdir().unwrap();
 
     let assert = Command::new(env!("CARGO_BIN_EXE_pt"))

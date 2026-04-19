@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# e2e-scenarios.sh — pt CLI end-to-end 시나리오 (사람이 직접 실행 가능)
+# e2e-scenarios.sh — human-runnable end-to-end scenarios for the pt CLI.
 # Usage: bash scripts/e2e-scenarios.sh [smoke|dependency|lifecycle|all]
 #
-# 환경변수:
-#   PT_BIN  — 사용할 pt 바이너리 경로 (기본: $REPO_ROOT/target/debug/pt)
+# Environment:
+#   PT_BIN  — path to the pt binary (default: $REPO_ROOT/target/debug/pt)
 #
-# 각 시나리오는 mktemp -d 로 격리된 디렉토리에서 실행된다.
+# Each scenario runs in its own isolated `mktemp -d` directory.
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PT_BIN="${PT_BIN:-$REPO_ROOT/target/debug/pt}"
 SELECT="${1:-all}"
 
-# --- Color helpers (test-examples.sh 스타일) ---
+# --- Color helpers (matches test-examples.sh style) ---
 if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput colors >/dev/null 2>&1; then
     GREEN=$(tput setaf 2); RED=$(tput setaf 1)
     YELLOW=$(tput setaf 3); BOLD=$(tput bold); RESET=$(tput sgr0)
@@ -27,7 +27,7 @@ oops() { printf "  %s✗%s %s\n" "$RED" "$RESET" "$1" >&2; }
 
 LAST_OUT=""
 # step <description> <cmd> [args...]
-# 명령어 실행 후 성공 시 ✓, 실패 시 ✗ + 출력 덤프 + exit.
+# Runs a command; prints ✓ on success, ✗ + captured output + exits on failure.
 step() {
     local desc="$1"; shift
     if LAST_OUT="$("$@" 2>&1)"; then
@@ -39,7 +39,7 @@ step() {
     fi
 }
 # expect <needle>
-# 직전 step 의 출력에서 needle 이 나오는지 검증.
+# Asserts that the previous step's output contains `needle`.
 expect() {
     local needle="$1"
     if ! printf '%s' "$LAST_OUT" | grep -q -- "$needle"; then
@@ -49,7 +49,7 @@ expect() {
     fi
 }
 
-# --- pt 바이너리 확인 ---
+# --- Ensure pt binary exists ---
 if [[ ! -x "$PT_BIN" ]]; then
     info "Building pt binary (not found at $PT_BIN)..."
     cargo build --manifest-path "$REPO_ROOT/Cargo.toml" -p polytunnel
@@ -60,7 +60,7 @@ if [[ ! -x "$PT_BIN" ]]; then
     exit 1
 fi
 
-# --- 시나리오들 ---
+# --- Scenarios ---
 
 scenario_smoke() {
     info "=== smoke: pt init → build → run ==="
@@ -91,7 +91,7 @@ JAVA
 }
 
 scenario_dependency() {
-    info "=== dependency: pt init → add → sync → tree (Maven Central 접근 필요) ==="
+    info "=== dependency: pt init → add → sync → tree (requires Maven Central access) ==="
     local d; d="$(mktemp -d)"
     (
         cd "$d"
@@ -110,7 +110,7 @@ scenario_dependency() {
 }
 
 scenario_lifecycle() {
-    info "=== lifecycle: pt init → add → remove (네트워크 불필요) ==="
+    info "=== lifecycle: pt init → add → remove (offline, no network) ==="
     local d; d="$(mktemp -d)"
     (
         cd "$d"
@@ -125,7 +125,7 @@ scenario_lifecycle() {
     rm -rf "$d"
 }
 
-# --- 디스패치 ---
+# --- Dispatch ---
 case "$SELECT" in
     smoke)      scenario_smoke ;;
     dependency) scenario_dependency ;;
