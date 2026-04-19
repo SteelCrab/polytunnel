@@ -4,6 +4,26 @@ All notable changes to this project will be documented here.
 
 ---
 
+## 🚀 [v0.2.1] — 2026-04-19
+
+> **Released:** 2026-04-19
+> `pt add` / `pt remove` / `pt run` commands, `TestProject` integration-test harness, human-runnable e2e shell scenarios, modular CI, and `rustls-webpki` security patch.
+
+---
+
+### ✨ Added
+- `pt add` / `pt remove` / `pt run` CLI commands
+- `TestProject` integration-test harness + human-runnable `scripts/e2e-scenarios.sh`
+
+### ♻️ Changed
+- `do_run` returns exit code; classpath puts project classes before deps; `main_class` trimmed before JVM call
+- CI workflow modularized; README / README_KR modernized; new `test-e2e-scenarios` job
+
+### 🔒 Security
+- `rustls-webpki` security patch and security-audit follow-ups
+
+---
+
 ## 🚀 [v0.2.0] — TBD
 
 > **Released:** TBD
