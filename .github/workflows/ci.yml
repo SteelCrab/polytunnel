@@ -258,7 +258,35 @@ jobs:
           name: example-logs
           path: logs/examples/
 
-  # Job 10: Code linting with Clippy
+  # Job 10: E2E shell scenarios (human-reproducible: bash scripts/e2e-scenarios.sh)
+  test-e2e-scenarios:
+    name: Test E2E Scenarios
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-e2e
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build pt binary
+        run: cargo build -p polytunnel
+
+      - name: Run E2E scenarios
+        run: bash scripts/e2e-scenarios.sh all
+
+  # Job 11: Code linting with Clippy
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -279,7 +307,7 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-  # Job 10: Code formatting check
+  # Job 12: Code formatting check
   fmt:
     name: Format
     runs-on: ubuntu-latest

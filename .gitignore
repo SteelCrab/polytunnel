@@ -45,4 +45,8 @@ docs/
 
 # Misc
 AGENTS.md
-scripts/
+scripts/*
+!scripts/setup-hooks.sh
+!scripts/setup-precommit.sh
+!scripts/test-examples.sh
+!scripts/e2e-scenarios.sh
