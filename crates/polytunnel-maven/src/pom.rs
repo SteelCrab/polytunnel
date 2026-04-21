@@ -246,10 +246,8 @@ pub fn parse_pom(xml: &str) -> Result<Pom> {
 
                 if let Some(current_elem) = current_path.last() {
                     match current_elem.as_str() {
-                        "packaging" => {
-                            if current_path.len() == 2 {
-                                pom.packaging = current_text.clone();
-                            }
+                        "packaging" if current_path.len() == 2 => {
+                            pom.packaging = current_text.clone();
                         }
                         "groupId" => {
                             if in_exclusion {

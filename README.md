@@ -1,91 +1,154 @@
 # Polytunnel
 
+[![CI](https://github.com/SteelCrab/polytunnel/workflows/CI/badge.svg)](../../actions)
 [![codecov](https://codecov.io/gh/SteelCrab/polytunnel/graph/badge.svg?branch=main)](https://codecov.io/gh/SteelCrab/polytunnel?branch=main)
 [![한국어](https://img.shields.io/badge/lang-한국어-blue.svg)](README_KR.md)
-[![CI](https://github.com/SteelCrab/polytunnel/workflows/CI/badge.svg)](../../actions)
 
+**Fast Java dependency manager written in Rust** — inspired by `uv` and `ruff`. Declarative TOML config, native binary, no JVM daemon.
 
-[Roadmap](ROADMAP.md) | [로드맵](ROADMAP_KR.md)
+```bash
+pt init my-app && cd my-app
+pt add com.google.guava:guava:33.0.0-jre
+pt build
+pt run com.example.App
+```
 
 ---
 
+## Why Polytunnel?
 
-Fast Java dependency manager written in Rust (uv/ruff style).
+|  | Maven | Gradle | **Polytunnel** |
+|---|---|---|---|
+| Startup | Slow JVM | Slow JVM (+daemon) | **Instant (native)** |
+| Config | XML (verbose) | Groovy/Kotlin (scripted) | **TOML (declarative)** |
+| Binary size | ~10MB + JVM | ~100MB + JVM | **~6MB, no JVM** |
+| Peak RSS | 500MB+ | 500MB~2GB | **~50-200MB target** |
+| Install | `brew install maven` | `brew install gradle` | **one binary** |
 
-## Features
+## Install
 
-- **Fast**: Rust-based for speed
-- **Parallel**: Concurrent dependency resolution and downloads
-- **Simple**: Intuitive CLI and configuration
-- **Build**: Direct javac compilation
-- **Test**: Auto-detect JUnit 5/4, TestNG
-- **Cross-Platform**: Windows x86_64, Windows ARM64, macOS aarch64, Linux x86_64, Linux aarch64, linux-musl
+Pick the method that fits you.
 
-## Comparison
+### Option 1 — Pre-built binary (recommended, no Rust needed)
 
-| Feature | Maven | Gradle | Polytunnel |
-|---------|-------|--------|------------|
-| Speed | Slow | Medium | **Instant** |
-| Config | XML | Groovy/Kotlin | **TOML** |
-| Scope | All-in-one | DSL | **Focused** |
-| Size | Large | Large | **~5MB** |
+**macOS (Apple Silicon)**
+```bash
+curl -L https://github.com/SteelCrab/polytunnel/releases/latest/download/pt-macos-aarch64 -o pt
+chmod +x pt && sudo mv pt /usr/local/bin/
+pt --version
+```
 
-## Architecture
+**Linux x86_64**
+```bash
+curl -L https://github.com/SteelCrab/polytunnel/releases/latest/download/pt-linux-x86_64 -o pt
+chmod +x pt && sudo mv pt /usr/local/bin/
+pt --version
+```
 
-| Crate | Description |
-|-------|-------------|
-| `polytunnel` | CLI binary (`pt` command) |
-| `polytunnel-core` | Core types, config parsing |
-| `polytunnel-maven` | Maven Central API client |
-| `polytunnel-resolver` | Dependency resolution |
-| `polytunnel-build` | Build and test execution |
+**Linux aarch64**
+```bash
+curl -L https://github.com/SteelCrab/polytunnel/releases/latest/download/pt-linux-aarch64 -o pt
+chmod +x pt && sudo mv pt /usr/local/bin/
+```
 
-## Installation
+**Linux musl (Alpine)**
+```bash
+curl -L https://github.com/SteelCrab/polytunnel/releases/latest/download/pt-linux-musl -o pt
+chmod +x pt && sudo mv pt /usr/local/bin/
+```
+
+**Windows x86_64 (PowerShell)**
+```powershell
+Invoke-WebRequest `
+  -Uri https://github.com/SteelCrab/polytunnel/releases/latest/download/pt-windows-x86_64.exe `
+  -OutFile pt.exe
+# Move pt.exe somewhere on your PATH
+```
+
+### Option 2 — Verified archive download
+
+Use this if you want SHA-256 verification before running the binary.
+
+```bash
+VERSION=0.2.0
+TARGET=linux-x86_64
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v${VERSION}/polytunnel-${VERSION}-${TARGET}.tar.gz
+curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v${VERSION}/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+tar -xzf polytunnel-${VERSION}-${TARGET}.tar.gz
+sudo mv pt /usr/local/bin/
+pt --version
+```
+
+Replace `TARGET` with one of: `linux-x86_64`, `linux-aarch64`, `linux-musl`, `linux-aarch64-musl`, `macos-aarch64`, `windows-x86_64`, `windows-aarch64`.
+
+### Option 3 — Via Cargo (requires Rust 1.75+)
 
 ```bash
 cargo install polytunnel
 ```
 
-## Release Package (Non-container)
-
-For releases before the container distribution, download archived artifacts from GitHub Releases.
-
-- Specification: [`package-spec.md`](package-spec.md)
-- Target examples:
-  - `polytunnel-0.1.0-linux-x86_64.tar.gz`
-  - `polytunnel-0.1.0-linux-aarch64.tar.gz`
-  - `polytunnel-0.1.0-linux-musl.tar.gz`
-  - `polytunnel-0.1.0-macos-aarch64.tar.gz`
-  - `polytunnel-0.1.0-windows-x86_64.zip`
-  - `polytunnel-0.1.0-windows-aarch64.zip`
-
-Example install flow:
+### Option 4 — Build from source
 
 ```bash
-curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/polytunnel-0.1.0-linux-x86_64.tar.gz
-curl -LO https://github.com/SteelCrab/polytunnel/releases/download/v0.1.0/SHA256SUMS
-sha256sum -c SHA256SUMS --ignore-missing
-tar -xzf polytunnel-0.1.0-linux-x86_64.tar.gz
-chmod +x polytunnel
-./polytunnel --version
+git clone https://github.com/SteelCrab/polytunnel.git
+cd polytunnel
+cargo build --release
+./target/release/pt --version
 ```
 
-If `SHA256SUMS.asc` is provided, verify the signature before execution.
+### Prerequisites
+
+Polytunnel manages Java projects, so you need a working JDK:
+
+- **Java 17+** (JDK, not JRE) with `javac` and `java` on PATH
+- Verify: `javac --version && java --version`
+
+---
 
 ## Quick Start
 
 ```bash
-# Initialize project
-pt init my-java-app
+# 1. Create a new project
+pt init my-app
+cd my-app
 
-# Build (compile & test)
+# 2. Add a dependency
+pt add com.google.guava:guava:33.0.0-jre
+
+# 3. Add a test dependency
+pt add org.junit.jupiter:junit-jupiter:5.10.1 --scope test
+
+# 4. Build (downloads deps, compiles sources, runs tests)
 pt build
 
-# Run tests only
-pt test
+# 5. Run your application
+pt run com.example.App
+pt run com.example.App -- --port 8080 --debug   # pass args after `--`
+
+# 6. Inspect dependency tree
+pt tree
 ```
 
-See `examples/hello-java` for a complete example.
+Full runnable example: [`examples/hello-java`](examples/hello-java).
+
+## Commands
+
+All commands below are shipped and working.
+
+| Command | Description |
+|---|---|
+| `pt init [name]` | Initialize a new project with `polytunnel.toml` |
+| `pt add <groupId:artifactId:version> [--scope <compile\|runtime\|test\|provided>]` | Add a dependency |
+| `pt remove <groupId:artifactId>` | Remove a dependency |
+| `pt sync [-v]` | Download/resolve all declared dependencies |
+| `pt tree [-v]` | Print dependency tree |
+| `pt build [--clean] [--skip-tests] [-v]` | Compile sources and run tests |
+| `pt test [PATTERN] [-v] [--fail-fast]` | Run tests only |
+| `pt run <MAIN_CLASS> [args...] [-v]` | Run a Java main class |
+| `pt vscode` | Generate `.vscode/` config for IntelliSense |
+
+Run `pt <command> --help` for detailed flags.
 
 ## Configuration
 
@@ -93,7 +156,7 @@ See `examples/hello-java` for a complete example.
 
 ```toml
 [project]
-name = "my-java-app"
+name = "my-app"
 java_version = "17"
 
 [build]
@@ -102,7 +165,7 @@ test_source_dirs = ["src/test/java"]
 output_dir = "target/classes"
 test_output_dir = "target/test-classes"
 compiler_args = ["-encoding", "UTF-8", "-g"]
-test_framework = "auto"
+test_framework = "auto"          # JUnit 5/4 and TestNG are auto-detected
 
 [dependencies]
 "com.google.guava:guava" = "33.0.0-jre"
@@ -113,56 +176,49 @@ name = "central"
 url = "https://repo1.maven.org/maven2/"
 ```
 
-## Commands
-
-| Command | Description | Status |
-|---------|-------------|--------|
-| `pt init` | Initialize project | Working |
-| `pt build` | Compile and run tests | Working |
-| `pt test` | Run tests only | Working |
-| `pt run` | Run application entry point | Planned |
-| `pt add` | Add dependency | Planned |
-| `pt remove` | Remove dependency | Planned |
-| `pt sync` | Sync dependencies | Planned |
-| `pt tree` | Show dependency tree | Planned |
-
-## Build & Test
-
-```bash
-# Build
-pt build              # Full build
-pt build --clean      # Clean rebuild
-pt build --skip-tests # No tests
-pt build -v           # Verbose
-
-# Test
-pt test           # All tests
-pt test MyClass   # Specific test
-pt test -v        # Verbose
-pt test --fail-fast
-```
-
-## Directory Structure
+## Project Layout
 
 Standard Maven layout:
 
 ```
-project-root/
+my-app/
 ├── polytunnel.toml
-├── src/main/java/
-├── src/test/java/
+├── src/
+│   ├── main/java/
+│   └── test/java/
 └── target/
+    ├── classes/
+    └── test-classes/
 ```
+
+## Architecture (for contributors)
+
+Cargo workspace at `crates/`:
+
+| Crate | Role |
+|---|---|
+| `polytunnel` | CLI binary (`pt`) |
+| `polytunnel-core` | Config parsing, shared types |
+| `polytunnel-maven` | Maven Central HTTP client, POM parser |
+| `polytunnel-resolver` | Concurrent dependency resolution |
+| `polytunnel-build` | javac compilation, test runner |
+| `polytunnel-ide` | VS Code integration |
 
 ## Development
 
 ```bash
 cargo build --workspace
 cargo test --workspace
-cargo clippy --workspace -- -D warnings
-cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --all -- --check
 ```
 
-## ko-fi ☕️
+Before opening a PR: build → clippy → fmt → test (all must pass).
 
-https://ko-fi.com/pistacrab
+## Support
+
+☕ [ko-fi.com/pistacrab](https://ko-fi.com/pistacrab)
+
+## License
+
+Apache-2.0
