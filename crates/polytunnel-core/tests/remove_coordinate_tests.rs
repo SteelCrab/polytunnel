@@ -138,3 +138,34 @@ name = "test"
     // Clean up
     let _ = std::fs::remove_file(&existing_backup);
 }
+
+#[test]
+fn remove_preserves_multiple_existing_backups() {
+    let mut file = NamedTempFile::with_suffix(".toml").unwrap();
+    writeln!(
+        file,
+        r#"[project]
+name = "test"
+
+[dependencies]
+"com.google.guava:guava" = "33.0.0"
+"#
+    )
+    .unwrap();
+
+    let path = file.path().to_path_buf();
+    let bak = path.with_extension("toml.bak");
+    let bak1 = std::path::PathBuf::from(format!("{}.1", bak.to_string_lossy()));
+
+    // Two pre-existing backups force unique_backup_path to iterate past .bak.1
+    std::fs::write(&bak, "first").unwrap();
+    std::fs::write(&bak1, "second").unwrap();
+
+    remove_dependency_from_file(&path, "com.google.guava:guava").unwrap();
+
+    assert_eq!(std::fs::read_to_string(&bak).unwrap(), "first");
+    assert_eq!(std::fs::read_to_string(&bak1).unwrap(), "second");
+
+    let _ = std::fs::remove_file(&bak);
+    let _ = std::fs::remove_file(&bak1);
+}
