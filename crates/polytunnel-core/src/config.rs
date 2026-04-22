@@ -326,20 +326,35 @@ pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
     let backup_path = unique_backup_path(path);
     std::fs::copy(path, &backup_path)?;
 
-    match std::fs::write(path, doc.to_string()) {
+    let write_result = std::fs::write(path, doc.to_string());
+    finalize_backup_write(path, &backup_path, write_result)
+}
+
+/// Finalize a backup-protected write.
+///
+/// On write success the backup is removed. On write failure the original file
+/// is restored from the backup and the backup is cleaned up. When the restore
+/// itself fails, `CoreError::RollbackFailed` is returned carrying both the
+/// original write error and the rollback error.
+pub fn finalize_backup_write(
+    path: &Path,
+    backup_path: &Path,
+    write_result: std::io::Result<()>,
+) -> Result<()> {
+    match write_result {
         Ok(()) => {
-            let _ = std::fs::remove_file(&backup_path);
+            let _ = std::fs::remove_file(backup_path);
             Ok(())
         }
         Err(e) => {
-            if let Err(rollback_err) = std::fs::copy(&backup_path, path) {
-                let _ = std::fs::remove_file(&backup_path);
+            if let Err(rollback_err) = std::fs::copy(backup_path, path) {
+                let _ = std::fs::remove_file(backup_path);
                 return Err(crate::error::CoreError::RollbackFailed {
                     write_error: e.to_string(),
                     rollback_error: rollback_err.to_string(),
                 });
             }
-            let _ = std::fs::remove_file(&backup_path);
+            let _ = std::fs::remove_file(backup_path);
             Err(e.into())
         }
     }
