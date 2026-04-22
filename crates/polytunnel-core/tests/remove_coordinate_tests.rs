@@ -1,4 +1,6 @@
-use polytunnel_core::{parse_remove_coordinate, remove_dependency_from_file};
+use polytunnel_core::{
+    CoreError, finalize_backup_write, parse_remove_coordinate, remove_dependency_from_file,
+};
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use tempfile::NamedTempFile;
@@ -168,4 +170,48 @@ name = "test"
 
     let _ = std::fs::remove_file(&bak);
     let _ = std::fs::remove_file(&bak1);
+}
+
+#[test]
+fn finalize_returns_write_error_when_rollback_succeeds() {
+    let mut file = NamedTempFile::with_suffix(".toml").unwrap();
+    writeln!(file, "partially-modified content to be rolled back").unwrap();
+    let path = file.path().to_path_buf();
+
+    let backup = path.with_extension("toml.bak");
+    let original = "original content preserved in backup";
+    std::fs::write(&backup, original).unwrap();
+
+    let injected = std::io::Error::other("simulated write failure");
+    let result = finalize_backup_write(&path, &backup, Err(injected));
+
+    let err = result.expect_err("original write error must propagate");
+    assert!(!matches!(err, CoreError::RollbackFailed { .. }));
+
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        original,
+        "path must be restored from backup"
+    );
+    assert!(
+        !backup.exists(),
+        "backup should be cleaned up after successful rollback"
+    );
+}
+
+#[test]
+fn finalize_removes_backup_on_write_success() {
+    let mut file = NamedTempFile::with_suffix(".toml").unwrap();
+    writeln!(file, "already-written successful content").unwrap();
+    let path = file.path().to_path_buf();
+
+    let backup = path.with_extension("toml.bak");
+    std::fs::write(&backup, "stale backup").unwrap();
+
+    finalize_backup_write(&path, &backup, Ok(())).unwrap();
+
+    assert!(
+        !backup.exists(),
+        "backup should be removed after successful write"
+    );
 }
