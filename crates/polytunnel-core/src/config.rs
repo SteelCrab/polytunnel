@@ -301,6 +301,8 @@ pub fn parse_remove_coordinate(input: &str) -> Result<String> {
 
 /// Remove a dependency from a TOML config file, preserving formatting and comments.
 ///
+/// Creates a backup (`.bak`) before writing. On success the backup is removed.
+/// On write failure the original file is restored from the backup.
 /// Returns `CoreError::DependencyNotFound` when the `ga_key` is not present.
 pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
     let content = std::fs::read_to_string(path)?;
@@ -320,8 +322,61 @@ pub fn remove_dependency_from_file(path: &Path, ga_key: &str) -> Result<()> {
     }
 
     deps.remove(ga_key);
-    std::fs::write(path, doc.to_string())?;
-    Ok(())
+
+    let backup_path = unique_backup_path(path);
+    std::fs::copy(path, &backup_path)?;
+
+    let write_result = std::fs::write(path, doc.to_string());
+    finalize_backup_write(path, &backup_path, write_result)
+}
+
+/// Finalize a backup-protected write.
+///
+/// On write success the backup is removed. On write failure the original file
+/// is restored from the backup and the backup is cleaned up. When the restore
+/// itself fails, `CoreError::RollbackFailed` is returned carrying both the
+/// original write error and the rollback error.
+pub fn finalize_backup_write(
+    path: &Path,
+    backup_path: &Path,
+    write_result: std::io::Result<()>,
+) -> Result<()> {
+    match write_result {
+        Ok(()) => {
+            let _ = std::fs::remove_file(backup_path);
+            Ok(())
+        }
+        Err(e) => {
+            if let Err(rollback_err) = std::fs::copy(backup_path, path) {
+                let _ = std::fs::remove_file(backup_path);
+                return Err(crate::error::CoreError::RollbackFailed {
+                    write_error: e.to_string(),
+                    rollback_error: rollback_err.to_string(),
+                });
+            }
+            let _ = std::fs::remove_file(backup_path);
+            Err(e.into())
+        }
+    }
+}
+
+/// Build a backup path that does not collide with any existing file.
+///
+/// Tries `<stem>.toml.bak` first, then `<stem>.toml.bak.1`, `.bak.2`, etc.
+fn unique_backup_path(path: &Path) -> std::path::PathBuf {
+    let base = path.with_extension("toml.bak");
+    if !base.exists() {
+        return base;
+    }
+    let base_str = base.to_string_lossy().into_owned();
+    let mut n = 1u32;
+    loop {
+        let candidate = std::path::PathBuf::from(format!("{base_str}.{n}"));
+        if !candidate.exists() {
+            return candidate;
+        }
+        n += 1;
+    }
 }
 
 fn scope_to_toml_str(scope: DependencyScope) -> &'static str {
